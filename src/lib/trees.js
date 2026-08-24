@@ -1,0 +1,204 @@
+// Catalogue des arbres disponibles (espèces courantes en France
+// métropolitaine) : fruitiers avec leurs variétés usuelles, feuillus
+// d'ornement et conifères.
+// Un arbre est un élément fixe du terrain : il n'est pas une culture
+// et ne dépend pas de la navigation temporelle.
+// canopyM : diamètre approximatif de la couronne adulte (en mètres).
+export const TREES = {
+  // --- Fruitiers ---
+  pommier: {
+    id: 'pommier',
+    name: 'Pommier',
+    emoji: '🍎',
+    canopyM: 3,
+    varieties: [
+      'Golden',
+      'Reine des reinettes',
+      'Boskoop',
+      'Gala',
+      'Granny Smith',
+      'Braeburn',
+      'Fuji',
+      'Pink Lady',
+      'Canada grise',
+      'Chanteclerc',
+    ],
+  },
+  poirier: {
+    id: 'poirier',
+    name: 'Poirier',
+    emoji: '🍐',
+    canopyM: 4,
+    varieties: [
+      'Williams',
+      'Conférence',
+      'Doyenné du Comice',
+      'Beurré Hardy',
+      'Louise Bonne',
+      'Passe-Crassane',
+    ],
+  },
+  cerisier: {
+    id: 'cerisier',
+    name: 'Cerisier',
+    emoji: '🍒',
+    canopyM: 6,
+    varieties: [
+      'Burlat',
+      'Bigarreau Napoléon',
+      'Summit',
+      'Reverchon',
+      'Montmorency',
+      'Griotte',
+    ],
+  },
+  prunier: {
+    id: 'prunier',
+    name: 'Prunier',
+    emoji: '🟣',
+    canopyM: 5,
+    varieties: [
+      'Reine-Claude dorée',
+      'Mirabelle de Nancy',
+      'Quetsche d\u2019Alsace',
+      'Prune d\u2019Ente',
+    ],
+  },
+  pecher: {
+    id: 'pecher',
+    name: 'Pêcher',
+    emoji: '🍑',
+    canopyM: 4,
+    varieties: ['Reine des vergers', 'Pêche de vigne', 'Sanguine', 'Nectarine'],
+  },
+  abricotier: {
+    id: 'abricotier',
+    name: 'Abricotier',
+    emoji: '🟠',
+    canopyM: 4,
+    varieties: ['Bergeron', 'Rouge du Roussillon', 'Polonais', 'Luizet'],
+  },
+  cognassier: {
+    id: 'cognassier',
+    name: 'Cognassier',
+    emoji: '🟡',
+    canopyM: 4,
+    varieties: ['Champion', 'Vranja', 'Géant de Vranja'],
+  },
+  figuier: {
+    id: 'figuier',
+    name: 'Figuier',
+    emoji: '🌿',
+    canopyM: 5,
+    varieties: ['Violette de Solliès', 'Goutte d\u2019or', 'Brunswick', 'Madeleine des deux saisons'],
+  },
+  olivier: {
+    id: 'olivier',
+    name: 'Olivier',
+    emoji: '🫒',
+    canopyM: 5,
+    varieties: ['Aglandau', 'Picholine', 'Tanche', 'Lucques'],
+  },
+  amandier: {
+    id: 'amandier',
+    name: 'Amandier',
+    emoji: '🌸',
+    canopyM: 5,
+    varieties: ['Ferragnès', 'Aï', 'Lauranne'],
+  },
+  noyer: {
+    id: 'noyer',
+    name: 'Noyer',
+    emoji: '🥜',
+    canopyM: 12,
+    varieties: ['Franquette', 'Mayette', 'Parisienne'],
+  },
+  noisetier: {
+    id: 'noisetier',
+    name: 'Noisetier',
+    emoji: '🌰',
+    canopyM: 4,
+    varieties: ['Merveille de Bollwiller', 'Fertile de Coutard', 'Corabel'],
+  },
+  chataignier: {
+    id: 'chataignier',
+    name: 'Châtaignier',
+    emoji: '🌰',
+    canopyM: 15,
+    varieties: ['Marigoule', 'Bouche de Bétizac', 'Comballe'],
+  },
+  kiwi: {
+    id: 'kiwi',
+    name: 'Kiwi (actinidia)',
+    emoji: '🥝',
+    canopyM: 3,
+    varieties: ['Hayward', 'Solissimo', 'Tomuri'],
+  },
+  kaki: {
+    id: 'kaki',
+    name: 'Plaqueminier (kaki)',
+    emoji: '🍊',
+    canopyM: 5,
+    varieties: ['Fuyu', 'Muscat', 'Rojo Brillante'],
+  },
+  neflier: {
+    id: 'neflier',
+    name: 'Néflier',
+    emoji: '🍈',
+    canopyM: 4,
+    varieties: [],
+  },
+  murier: {
+    id: 'murier',
+    name: 'Mûrier',
+    emoji: '🫐',
+    canopyM: 8,
+    varieties: [],
+  },
+  grenadier: {
+    id: 'grenadier',
+    name: 'Grenadier',
+    emoji: '🔴',
+    canopyM: 3,
+    varieties: ['Provence', 'Mollar de Elche'],
+  },
+  citronnier: {
+    id: 'citronnier',
+    name: 'Citronnier',
+    emoji: '🍋',
+    canopyM: 3,
+    varieties: ['Eureka', 'Quatre saisons', 'Meyer'],
+  },
+  oranger: {
+    id: 'oranger',
+    name: 'Oranger',
+    emoji: '🍊',
+    canopyM: 4,
+    varieties: ['Navel', 'Valencia', 'Maltaise'],
+  },
+
+  // --- Feuillus ---
+  chene: { id: 'chene', name: 'Chêne', emoji: '🌳', canopyM: 20, varieties: [] },
+  hetre: { id: 'hetre', name: 'Hêtre', emoji: '🌳', canopyM: 18, varieties: [] },
+  tilleul: { id: 'tilleul', name: 'Tilleul', emoji: '🌳', canopyM: 15, varieties: [] },
+  erable: { id: 'erable', name: 'Érable', emoji: '🍁', canopyM: 12, varieties: [] },
+  bouleau: { id: 'bouleau', name: 'Bouleau', emoji: '🌳', canopyM: 8, varieties: [] },
+  charme: { id: 'charme', name: 'Charme', emoji: '🌳', canopyM: 12, varieties: [] },
+  frene: { id: 'frene', name: 'Frêne', emoji: '🌳', canopyM: 15, varieties: [] },
+  saule: { id: 'saule', name: 'Saule pleureur', emoji: '🌳', canopyM: 12, varieties: [] },
+  peuplier: { id: 'peuplier', name: 'Peuplier', emoji: '🌳', canopyM: 8, varieties: [] },
+  platane: { id: 'platane', name: 'Platane', emoji: '🌳', canopyM: 20, varieties: [] },
+  marronnier: { id: 'marronnier', name: 'Marronnier', emoji: '🌳', canopyM: 15, varieties: [] },
+
+  // --- Conifères ---
+  pin: { id: 'pin', name: 'Pin', emoji: '🌲', canopyM: 12, varieties: [] },
+  sapin: { id: 'sapin', name: 'Sapin', emoji: '🌲', canopyM: 10, varieties: [] },
+  epicea: { id: 'epicea', name: 'Épicéa', emoji: '🌲', canopyM: 8, varieties: [] },
+  cedre: { id: 'cedre', name: 'Cèdre', emoji: '🌲', canopyM: 15, varieties: [] },
+  cypres: { id: 'cypres', name: 'Cyprès', emoji: '🌲', canopyM: 3, varieties: [] },
+  if: { id: 'if', name: 'If', emoji: '🌲', canopyM: 6, varieties: [] },
+}
+
+export function getTree(typeId) {
+  return TREES[typeId]
+}

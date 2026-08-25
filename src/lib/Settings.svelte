@@ -1,7 +1,22 @@
 <script>
   import { store } from './store.svelte.js'
-  import { CATEGORIES } from './crops.js'
+  import { CATEGORIES, windowsToMonths, monthsToWindows } from './crops.js'
   import { showConfirm } from './dialog.svelte.js'
+
+  const MONTH_LABELS = [
+    'janv',
+    'févr',
+    'mars',
+    'avr',
+    'mai',
+    'juin',
+    'juil',
+    'août',
+    'sept',
+    'oct',
+    'nov',
+    'déc',
+  ]
 
   let cropGroups = $derived(
     Object.entries(CATEGORIES).map(([key, label]) => ({
@@ -68,6 +83,21 @@
     newName = ''
     newEmoji = '🥦'
     emojiPickerOpen = false
+  }
+
+  // --- Fenêtres de plantation des légumes personnalisés ---
+  let editingWindowsCropId = $state(null)
+
+  function toggleWindowsEditor(crop) {
+    editingWindowsCropId = editingWindowsCropId === crop.id ? null : crop.id
+  }
+
+  // Ajoute/retire un mois d'une fenêtre de plantation d'un légume ajouté
+  function toggleMonth(crop, field, month) {
+    const months = windowsToMonths(crop[field])
+    if (months.has(month)) months.delete(month)
+    else months.add(month)
+    store.updateCustomCrop(crop.id, { [field]: monthsToWindows(months) })
   }
 
   async function removeCustomCrop(crop) {
@@ -251,6 +281,13 @@
                 {#if store.isCustomCrop(crop.id)}
                   <button
                     class="reset"
+                    title="Dates de plantation possibles"
+                    onclick={() => toggleWindowsEditor(crop)}
+                  >
+                    📅
+                  </button>
+                  <button
+                    class="reset"
                     title="Supprimer ce légume"
                     onclick={() => removeCustomCrop(crop)}
                   >
@@ -259,6 +296,32 @@
                 {/if}
               </td>
             </tr>
+            {#if editingWindowsCropId === crop.id}
+              <tr class="windows-row">
+                <td colspan={FIELDS.length + 4}>
+                  <div class="windows-editor">
+                    {#each [['plantWindows', '🌱 Pleine terre'], ['shelterPlantWindows', '🏠 Sous abri']] as [field, label] (field)}
+                      {@const months = windowsToMonths(crop[field])}
+                      <div class="windows-line">
+                        <span class="windows-label">{label}</span>
+                        {#each MONTH_LABELS as m, i (m)}
+                          <button
+                            class="month-toggle"
+                            class:on={months.has(i + 1)}
+                            title={months.has(i + 1)
+                              ? 'Retirer ce mois'
+                              : 'Autoriser ce mois'}
+                            onclick={() => toggleMonth(crop, field, i + 1)}
+                          >
+                            {m}
+                          </button>
+                        {/each}
+                      </div>
+                    {/each}
+                  </div>
+                </td>
+              </tr>
+            {/if}
           {/each}
         </tbody>
       </table>
@@ -308,7 +371,8 @@
     <button type="submit" disabled={!newName.trim()}>＋ Ajouter</button>
     <p class="add-hint">
       Le légume est créé avec des valeurs par défaut (plantable toute
-      l'année) : ajustez-les ensuite dans le tableau ci-dessus.
+      l'année) : ajustez ses métriques dans le tableau ci-dessus et ses
+      dates de plantation possibles avec le bouton 📅.
     </p>
   </form>
 
@@ -446,6 +510,45 @@
   }
   button.reset:hover {
     background: #f2f2f2;
+  }
+  tr.windows-row td {
+    background: #f7faf3;
+    text-align: left;
+  }
+  .windows-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.2rem 0;
+  }
+  .windows-line {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-wrap: wrap;
+  }
+  .windows-label {
+    width: 8rem;
+    font-size: 0.78rem;
+    color: #556b47;
+    font-weight: 600;
+  }
+  .month-toggle {
+    padding: 0.15rem 0.4rem;
+    border: 1px solid #ccc;
+    background: #fff;
+    color: #999;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.72rem;
+  }
+  .month-toggle:hover {
+    border-color: #4a7c3a;
+  }
+  .month-toggle.on {
+    background: #4a7c3a;
+    border-color: #4a7c3a;
+    color: #fff;
   }
   .add-crop {
     display: flex;

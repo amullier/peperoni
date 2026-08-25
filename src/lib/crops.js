@@ -481,6 +481,27 @@ export function monthInWindows(month, windows = []) {
   return windows.some(([from, to]) => month >= from && month <= to)
 }
 
+// Fenêtres [[début, fin]] → ensemble de mois (1-12)
+export function windowsToMonths(windows = []) {
+  const months = new Set()
+  for (const [from, to] of windows) {
+    for (let m = from; m <= to; m++) months.add(m)
+  }
+  return months
+}
+
+// Ensemble de mois (1-12) → fenêtres [[début, fin]] contiguës
+export function monthsToWindows(months) {
+  const sorted = [...months].sort((a, b) => a - b)
+  const windows = []
+  for (const m of sorted) {
+    const last = windows[windows.length - 1]
+    if (last && m === last[1] + 1) last[1] = m
+    else windows.push([m, m])
+  }
+  return windows
+}
+
 export function getCrop(id) {
   return CROPS[id]
 }

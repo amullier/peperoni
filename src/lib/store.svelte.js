@@ -175,7 +175,8 @@ class Store {
       this.zones.length > 0 ||
       this.plantings.length > 0 ||
       this.trees.length > 0 ||
-      this.serres.length > 0
+      this.serres.length > 0 ||
+      Object.keys(this.customCrops).length > 0
     )
   }
 
@@ -263,6 +264,15 @@ class Store {
     }
     this.save()
     return this.customCrops[id]
+  }
+
+  // Modifie un légume personnalisé (ex. fenêtres de plantation)
+  updateCustomCrop(id, patch) {
+    const crop = this.customCrops[id]
+    if (crop) {
+      Object.assign(crop, patch)
+      this.save()
+    }
   }
 
   removeCustomCrop(id) {

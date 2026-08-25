@@ -13,19 +13,61 @@
 
   // --- Ajout d'un légume personnalisé ---
   let newName = $state('')
-  let newEmoji = $state('')
+  let newEmoji = $state('🥦')
   let newCategory = $state('fruit')
+  let emojiPickerOpen = $state(false)
+
+  // Emojis proposés : uniquement des légumes/aliments unicode existants
+  // et les pastilles de couleur (déjà utilisées par radis, betterave…)
+  const EMOJI_CHOICES = [
+    '🥦',
+    '🥬',
+    '🥗',
+    '🍃',
+    '🌿',
+    '🌱',
+    '🍅',
+    '🥒',
+    '🫑',
+    '🌶️',
+    '🍆',
+    '🎃',
+    '🫘',
+    '🫛',
+    '🍈',
+    '🌽',
+    '🥕',
+    '🥔',
+    '🍠',
+    '🧅',
+    '🧄',
+    '🫚',
+    '🍄',
+    '🥜',
+    '🫒',
+    '🥑',
+    '🔴',
+    '🟠',
+    '🟡',
+    '🟢',
+    '🔵',
+    '🟣',
+    '🟤',
+    '⚫',
+    '⚪',
+  ]
 
   function addCrop() {
     const name = newName.trim()
     if (!name) return
     store.addCustomCrop({
       name,
-      emoji: newEmoji.trim(),
+      emoji: newEmoji,
       category: newCategory,
     })
     newName = ''
-    newEmoji = ''
+    newEmoji = '🥦'
+    emojiPickerOpen = false
   }
 
   async function removeCustomCrop(crop) {
@@ -225,14 +267,32 @@
 
   <h3>Ajouter un légume</h3>
   <form class="add-crop" onsubmit={(e) => (e.preventDefault(), addCrop())}>
-    <input
-      type="text"
-      class="emoji-input"
-      placeholder="🥦"
-      maxlength="4"
-      bind:value={newEmoji}
-      title="Emoji (optionnel)"
-    />
+    <div class="emoji-picker">
+      <button
+        type="button"
+        class="emoji-current"
+        title="Choisir un emoji"
+        onclick={() => (emojiPickerOpen = !emojiPickerOpen)}
+      >
+        {newEmoji} ▾
+      </button>
+      {#if emojiPickerOpen}
+        <div class="emoji-grid">
+          {#each EMOJI_CHOICES as emoji (emoji)}
+            <button
+              type="button"
+              class:selected={emoji === newEmoji}
+              onclick={() => {
+                newEmoji = emoji
+                emojiPickerOpen = false
+              }}
+            >
+              {emoji}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
     <input
       type="text"
       class="name-input"
@@ -404,9 +464,50 @@
     border-radius: 6px;
     font-size: 0.85rem;
   }
-  .add-crop .emoji-input {
-    width: 3rem;
-    text-align: center;
+  .add-crop .emoji-picker {
+    position: relative;
+  }
+  .add-crop .emoji-current {
+    padding: 0.3rem 0.55rem;
+    border: 1px solid #ccc;
+    background: #fff;
+    color: #444;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .add-crop .emoji-current:hover {
+    background: #f2f2f2;
+  }
+  .add-crop .emoji-grid {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(7, 2rem);
+    gap: 2px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 0.35rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+  .add-crop .emoji-grid button {
+    padding: 0.15rem;
+    border: 1px solid transparent;
+    background: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+  .add-crop .emoji-grid button:hover {
+    background: #eef4e6;
+  }
+  .add-crop .emoji-grid button.selected {
+    border-color: #4a7c3a;
+    background: #e8f2df;
   }
   .add-crop .name-input {
     width: 14rem;

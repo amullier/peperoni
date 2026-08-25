@@ -5,6 +5,7 @@
   import Settings from './lib/Settings.svelte'
   import TableView from './lib/TableView.svelte'
   import Tutorial from './lib/Tutorial.svelte'
+  import Dialog from './lib/Dialog.svelte'
 
   let screen = $state('terrain')
 
@@ -41,6 +42,8 @@
     onhighlight={(s) => (tutoScreen = s)}
   />
 {/if}
+
+<Dialog />
 
 <style>
   .app {

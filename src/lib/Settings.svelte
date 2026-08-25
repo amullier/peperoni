@@ -1,6 +1,7 @@
 <script>
   import { store } from './store.svelte.js'
   import { CATEGORIES } from './crops.js'
+  import { showConfirm } from './dialog.svelte.js'
 
   let cropGroups = $derived(
     Object.entries(CATEGORIES).map(([key, label]) => ({
@@ -27,12 +28,19 @@
     newEmoji = ''
   }
 
-  function removeCustomCrop(crop) {
+  async function removeCustomCrop(crop) {
     const hasPlantings = store.plantings.some((p) => p.cropId === crop.id)
     const msg = hasPlantings
       ? `Supprimer « ${crop.name} » et ses plantations ?`
       : `Supprimer « ${crop.name} » ?`
-    if (confirm(msg)) store.removeCustomCrop(crop.id)
+    if (
+      await showConfirm(msg, {
+        title: 'Supprimer le légume',
+        okLabel: 'Supprimer',
+        danger: true,
+      })
+    )
+      store.removeCustomCrop(crop.id)
   }
 
   const FIELDS = [
@@ -76,21 +84,32 @@
     store.setCropOverride(cropId, 'nurseryDays', value)
   }
 
-  function resetCrop(crop) {
-    if (confirm(`Rétablir les valeurs par défaut pour « ${crop.name} » ?`)) {
+  async function resetCrop(crop) {
+    if (
+      await showConfirm(
+        `Rétablir les valeurs par défaut pour « ${crop.name} » ?`,
+        { title: 'Rétablir', okLabel: 'Rétablir' }
+      )
+    ) {
       store.resetCropOverrides(crop.id)
     }
   }
 
-  function deleteAll() {
+  async function deleteAll() {
     if (
-      !confirm(
+      !(await showConfirm(
         'Tout supprimer : zones, plantations, arbres, serres et paramétrages.\n' +
-          'Pensez à exporter vos données avant si besoin. Continuer ?'
-      )
+          'Pensez à exporter vos données avant si besoin. Continuer ?',
+        { title: 'Tout supprimer', okLabel: 'Continuer', danger: true }
+      ))
     )
       return
-    if (!confirm('Dernière confirmation : cette action est irréversible.'))
+    if (
+      !(await showConfirm(
+        'Dernière confirmation : cette action est irréversible.',
+        { title: 'Tout supprimer', okLabel: 'Tout supprimer', danger: true }
+      ))
+    )
       return
     store.clearAll()
   }

@@ -3,6 +3,7 @@
   import { CATEGORIES, monthInWindows } from './crops.js'
   import { getTree } from './trees.js'
   import { formatFR, todayISO, fromISO, toISO } from './dates.js'
+  import { showAlert, showConfirm } from './dialog.svelte.js'
 
   // Un légume par id : catalogue + légumes personnalisés
   const getCrop = (id) => store.getCrop(id)
@@ -241,10 +242,11 @@
       const enough = store.canPlant(zone, cropConfig ?? {})
       store.plant(zone.id, selectedCropId, cropConfig ?? {})
       if (!enough) {
-        alert(
-          `⚠️ Attention : il n'y a pas assez de place dans « ${zone.name} » ` +
-            `pour ${cropConfig?.rows ?? 1} rang(s) supplémentaire(s). ` +
-            `Les rangs en trop ne seront pas affichés.`
+        showAlert(
+          `Il n'y a pas assez de place dans « ${zone.name} » ` +
+            `pour ${cropConfig?.rows ?? 1} rang(s) supplémentaire(s).\n` +
+            `Les rangs en trop ne seront pas affichés.`,
+          { title: 'Pas assez de place' }
         )
       }
     } else if (items.length > 0) {
@@ -282,8 +284,13 @@
     return items.filter((i) => i.planting.mode === 'plants')
   }
 
-  function removePlanting(planting) {
-    if (confirm('Retirer cette plantation ?')) {
+  async function removePlanting(planting) {
+    if (
+      await showConfirm('Retirer cette plantation ?', {
+        okLabel: 'Retirer',
+        danger: true,
+      })
+    ) {
       store.removePlanting(planting.id)
     }
   }
@@ -301,7 +308,9 @@
     const zone = detailZone
     if (zone && store.zoneUsedUnits(zone) > store.zoneCapacityUnits(zone)) {
       store.updatePlanting(planting.id, before)
-      alert('Pas assez de place dans la zone pour cette modification.')
+      showAlert('Pas assez de place dans la zone pour cette modification.', {
+        title: 'Pas assez de place',
+      })
     }
   }
 

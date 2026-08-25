@@ -1,5 +1,6 @@
 <script>
   import { store, validateData } from './store.svelte.js'
+  import { showAlert, showConfirm } from './dialog.svelte.js'
 
   let { screen = $bindable('terrain'), tutoHighlight = null } = $props()
 
@@ -25,16 +26,21 @@
     try {
       data = JSON.parse(await file.text())
     } catch {
-      alert('Fichier invalide : impossible de lire le JSON.')
+      showAlert('Fichier invalide : impossible de lire le JSON.', {
+        title: 'Import impossible',
+      })
       return
     }
     if (!validateData(data)) {
-      alert("Fichier invalide : ce n'est pas une sauvegarde Peperoni.")
+      showAlert("Fichier invalide : ce n'est pas une sauvegarde Peperoni.", {
+        title: 'Import impossible',
+      })
       return
     }
     if (store.hasData) {
-      const ok = confirm(
-        'Des données existent déjà. Les remplacer par celles du fichier importé ?'
+      const ok = await showConfirm(
+        'Des données existent déjà. Les remplacer par celles du fichier importé ?',
+        { title: 'Importer', okLabel: 'Remplacer', danger: true }
       )
       if (!ok) return
     }

@@ -1,6 +1,7 @@
 <script>
   import { store } from './store.svelte.js'
   import { TREES, getTree } from './trees.js'
+  import { showConfirm } from './dialog.svelte.js'
 
   // Dimensions logiques du terrain (unités internes)
   const W = 1000
@@ -518,8 +519,13 @@
     svgEl.setPointerCapture(event.pointerId)
   }
 
-  function deleteSerre(serre) {
-    if (confirm(`Supprimer la ${serre.name} ? (les zones restent en place)`)) {
+  async function deleteSerre(serre) {
+    if (
+      await showConfirm(
+        `Supprimer la ${serre.name} ? (les zones restent en place)`,
+        { title: 'Supprimer la serre', okLabel: 'Supprimer', danger: true }
+      )
+    ) {
       if (selectedSerreId === serre.id) selectedSerreId = null
       store.removeSerre(serre.id)
     }
@@ -545,8 +551,14 @@
     svgEl.setPointerCapture(event.pointerId)
   }
 
-  function deleteTree(tree) {
-    if (confirm(`Supprimer « ${treeName(tree)} » ?`)) {
+  async function deleteTree(tree) {
+    if (
+      await showConfirm(`Supprimer « ${treeName(tree)} » ?`, {
+        title: "Supprimer l'arbre",
+        okLabel: 'Supprimer',
+        danger: true,
+      })
+    ) {
       if (selectedTreeId === tree.id) selectedTreeId = null
       store.removeTree(tree.id)
     }
@@ -622,12 +634,18 @@
     editingKind = null
   }
 
-  function deleteZone(zone) {
+  async function deleteZone(zone) {
     const hasPlantings = store.plantings.some((p) => p.zoneId === zone.id)
     const msg = hasPlantings
       ? `Supprimer la zone « ${zone.name} » et ses plantations ?`
       : `Supprimer la zone « ${zone.name} » ?`
-    if (confirm(msg)) {
+    if (
+      await showConfirm(msg, {
+        title: 'Supprimer la zone',
+        okLabel: 'Supprimer',
+        danger: true,
+      })
+    ) {
       if (selectedId === zone.id) selectedId = null
       store.removeZone(zone.id)
     }

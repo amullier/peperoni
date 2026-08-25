@@ -96,6 +96,28 @@ export function validateData(data) {
 let uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 
+// Renommages d'identifiants de légumes entre versions du catalogue
+const CROP_ID_RENAMES = { potiron: 'courges' }
+
+// Applique les renommages aux données chargées / importées
+function migrateCropIds(data) {
+  for (const p of data.plantings ?? []) {
+    if (CROP_ID_RENAMES[p.cropId]) p.cropId = CROP_ID_RENAMES[p.cropId]
+  }
+  if (data.cropOverrides) {
+    for (const [oldId, newId] of Object.entries(CROP_ID_RENAMES)) {
+      if (data.cropOverrides[oldId] && !data.cropOverrides[newId]) {
+        data.cropOverrides[newId] = data.cropOverrides[oldId]
+      }
+      delete data.cropOverrides[oldId]
+    }
+  }
+  if (data.hiddenCrops) {
+    data.hiddenCrops = data.hiddenCrops.map((id) => CROP_ID_RENAMES[id] ?? id)
+  }
+  return data
+}
+
 class Store {
   zones = $state([])
   plantings = $state([])
@@ -106,7 +128,7 @@ class Store {
   currentDate = $state(todayISO())
 
   constructor() {
-    const data = loadFromStorage()
+    const data = migrateCropIds(loadFromStorage())
     this.zones = data.zones
     this.plantings = data.plantings
     this.trees = data.trees ?? []
@@ -141,6 +163,7 @@ class Store {
   }
 
   importData(data) {
+    data = migrateCropIds(data)
     this.zones = data.zones
     this.plantings = data.plantings
     this.trees = data.trees ?? []

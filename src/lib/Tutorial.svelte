@@ -112,7 +112,8 @@
     position: fixed;
     inset: 0;
     z-index: 300;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(20, 30, 15, 0.5);
+    backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -120,10 +121,21 @@
   .tuto {
     position: relative;
     background: #fff;
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 1.6rem 1.8rem 1.2rem;
     width: min(560px, calc(100vw - 2rem));
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 16px 48px rgba(30, 51, 23, 0.3);
+    animation: tuto-in 0.22s ease;
+  }
+  @keyframes tuto-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
   .close {
     position: absolute;

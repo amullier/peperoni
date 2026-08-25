@@ -63,6 +63,18 @@
   let treeMatches = $derived(
     treeList.filter((t) => normalize(t.name).includes(normalize(treeSearch)))
   )
+  let treeMatchGroups = $derived(
+    [
+      {
+        label: 'Arbres',
+        items: treeMatches.filter((t) => t.group !== 'petit-fruit'),
+      },
+      {
+        label: 'Petits fruits',
+        items: treeMatches.filter((t) => t.group === 'petit-fruit'),
+      },
+    ].filter((g) => g.items.length > 0)
+  )
 
   function pickTree(tree) {
     treeTool = tree.id
@@ -786,10 +798,10 @@
       {/each}
     </ul>
 
-    <h2 class="trees-title">Arbres</h2>
+    <h2 class="trees-title">Arbres & petits fruits</h2>
     <p class="hint">
-      Éléments fixes du terrain : sélectionnez un arbre puis cliquez sur le
-      terrain pour le placer.
+      Éléments fixes du terrain : cherchez un arbre ou un petit fruit
+      (framboisier, fraisier…), puis cliquez sur le terrain pour le placer.
     </p>
     <div class="tree-tools">
       <div class="tree-search">
@@ -820,19 +832,22 @@
         {/if}
         {#if treeDropdownOpen && treeMatches.length > 0}
           <ul class="tree-dropdown">
-            {#each treeMatches as tree (tree.id)}
-              <li>
-                <button
-                  class:active={treeTool === tree.id}
-                  onpointerdown={(e) => {
-                    e.preventDefault()
-                    pickTree(tree)
-                  }}
-                >
-                  <span>{tree.emoji} {tree.name}</span>
-                  <span class="canopy">⌀ {tree.canopyM} m</span>
-                </button>
-              </li>
+            {#each treeMatchGroups as group (group.label)}
+              <li class="group-label">{group.label}</li>
+              {#each group.items as tree (tree.id)}
+                <li>
+                  <button
+                    class:active={treeTool === tree.id}
+                    onpointerdown={(e) => {
+                      e.preventDefault()
+                      pickTree(tree)
+                    }}
+                  >
+                    <span>{tree.emoji} {tree.name}</span>
+                    <span class="canopy">⌀ {tree.canopyM} m</span>
+                  </button>
+                </li>
+              {/each}
             {/each}
           </ul>
         {/if}
@@ -1218,6 +1233,11 @@
     flex-shrink: 0;
     overflow-y: auto;
     min-height: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-l);
+    padding: 0.9rem;
+    box-shadow: var(--shadow-s);
   }
   h2 {
     margin: 0 0 0.5rem;
@@ -1237,16 +1257,18 @@
     margin-bottom: 0.3rem;
   }
   button.small {
-    padding: 0.25rem 0.6rem;
-    border: 1px solid #4a7c3a;
-    background: #fff;
-    color: #2d4a22;
-    border-radius: 6px;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--green-800);
+    border-radius: 999px;
     cursor: pointer;
     font-size: 0.85rem;
+    box-shadow: var(--shadow-s);
   }
   button.small:hover:not(:disabled) {
-    background: #e8f2df;
+    background: var(--green-100);
+    border-color: var(--green-500);
   }
   button.small:disabled {
     opacity: 0.45;
@@ -1328,7 +1350,8 @@
     flex: 1;
     min-height: 0;
     display: block;
-    border-radius: 8px;
+    border-radius: var(--radius-l);
+    box-shadow: var(--shadow-m);
     cursor: crosshair;
     touch-action: none;
   }
@@ -1536,6 +1559,13 @@
     max-height: 260px;
     overflow-y: auto;
   }
+  .tree-dropdown li.group-label {
+    padding: 0.35rem 0.5rem 0.15rem;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7c5e;
+  }
   .tree-dropdown li button {
     display: flex;
     align-items: center;
@@ -1619,17 +1649,29 @@
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(20, 30, 15, 0.4);
+    backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .popup {
-    background: #fff;
-    border-radius: 10px;
-    padding: 1.2rem;
+    background: var(--surface);
+    border-radius: var(--radius-l);
+    padding: 1.3rem;
     min-width: 300px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-l);
+    animation: popup-in 0.18s ease;
+  }
+  @keyframes popup-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
   .popup h3 {
     margin: 0 0 0.8rem;
@@ -1682,11 +1724,12 @@
     display: flex;
     flex-direction: column;
     min-width: 160px;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-    padding: 0.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow-l);
+    padding: 0.3rem;
+    animation: popup-in 0.12s ease;
   }
   .ctx-menu button {
     background: none;

@@ -232,6 +232,9 @@
       const y = Math.max(zone.y + 4, Math.min(zone.y + zone.h - 4, p.y))
       store.plantAt(zone.id, selectedCropId, x, y)
     } else if (selectedCropId) {
+      // Plantation au rang : chaque clic ajoute la configuration de rangs
+      // à la zone cliquée (la sélection reste active pour enchaîner) ;
+      // Échap ou clic hors d'une zone pour terminer
       const enough = store.canPlant(zone, cropConfig ?? {})
       store.plant(zone.id, selectedCropId, cropConfig ?? {})
       if (!enough) {
@@ -241,7 +244,6 @@
             `Les rangs en trop ne seront pas affichés.`
         )
       }
-      cancelSelection()
     } else if (items.length > 0) {
       // Ouvre/ferme le panneau de détail à droite
       detailZoneId = detailZoneId === zone.id ? null : zone.id
@@ -458,11 +460,13 @@
           </p>
         {:else}
           <p class="invite">
-            👉 Cliquez sur une zone de culture libre pour y planter des
+            👉 Cliquez sur une zone pour y planter des
             {getCrop(selectedCropId).name.toLowerCase()}s
             ({cropConfig?.rows} rang{cropConfig?.rows > 1 ? 's' : ''},
             {cropConfig?.rowSpacingCm} cm entre rangs,
-            {cropConfig?.plantSpacingCm} cm entre plants).
+            {cropConfig?.plantSpacingCm} cm entre plants). Chaque clic ajoute
+            une plantation ; Échap ou clic à côté pour terminer.
+            <button class="finish" onclick={cancelSelection}>✓ Terminer</button>
           </p>
         {/if}
       {:else}
@@ -497,7 +501,16 @@
         onpointermove={onPointerMove}
         onpointerup={onPointerUp}
       >
-        <rect x="0" y="0" width={W} height={H} class="ground" />
+        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+        <rect
+          x="0"
+          y="0"
+          width={W}
+          height={H}
+          class="ground"
+          role="presentation"
+          onclick={() => selectedCropId && cancelSelection()}
+        />
 
         <!-- Serres (surbrillance sous les zones de culture) -->
         {#each store.serres as serre (serre.id)}
@@ -821,13 +834,14 @@
     position: relative;
     flex: 1;
     display: flex;
-    height: 34px;
-    border: 1px solid #c4d4b4;
-    border-radius: 8px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
     overflow: hidden;
     cursor: pointer;
-    background: #f0f6e8;
+    background: var(--surface);
     user-select: none;
+    box-shadow: var(--shadow-s);
   }
   .timeline .month {
     flex: 1;
@@ -835,8 +849,12 @@
     align-items: center;
     justify-content: center;
     font-size: 0.68rem;
-    color: #6b7c5e;
-    border-right: 1px solid #dde8d0;
+    color: var(--text-muted);
+    border-right: 1px solid #eef2e8;
+    transition: background 0.15s ease;
+  }
+  .timeline .month:hover {
+    background: var(--green-50);
   }
   .timeline .month:last-child {
     border-right: none;
@@ -885,15 +903,18 @@
     gap: 0.4rem;
   }
   .timebar button {
-    padding: 0.35rem 0.8rem;
-    border: 1px solid #4a7c3a;
-    background: #fff;
-    color: #2d4a22;
-    border-radius: 6px;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--green-800);
+    border-radius: 999px;
     cursor: pointer;
+    box-shadow: var(--shadow-s);
+    font-size: 0.88rem;
   }
   .timebar button:hover {
-    background: #e8f2df;
+    background: var(--green-100);
+    border-color: var(--green-500);
   }
   .timebar button.today {
     border-style: dashed;
@@ -910,10 +931,15 @@
     min-height: 0;
   }
   aside {
-    width: 240px;
+    width: 250px;
     flex-shrink: 0;
     overflow-y: auto;
     min-height: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-l);
+    padding: 0.9rem;
+    box-shadow: var(--shadow-s);
   }
   h2 {
     margin: 0 0 0.5rem;
@@ -941,19 +967,23 @@
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    padding: 0.5rem;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-m);
+    background: var(--surface);
     cursor: pointer;
     text-align: left;
+    box-shadow: var(--shadow-s);
   }
   .crop:hover {
-    border-color: #6da653;
+    border-color: var(--green-500);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-m);
   }
   .crop.selected {
-    border-color: #4a7c3a;
-    background: #e8f2df;
+    border-color: var(--green-600);
+    background: var(--green-100);
+    box-shadow: 0 0 0 3px rgba(109, 166, 83, 0.2);
   }
   .crop .emoji {
     font-size: 1.4rem;
@@ -978,10 +1008,10 @@
     font-size: 0.95rem;
   }
   .crop.plantable-now {
-    border-color: #6da653;
+    border-left: 4px solid #6da653;
   }
   .crop.plantable-shelter {
-    border-color: #7fb6d9;
+    border-left: 4px solid #7fb6d9;
   }
   .crop.plantable-now.selected,
   .crop.plantable-shelter.selected {
@@ -1099,7 +1129,9 @@
     height: 100%;
     max-height: 100%;
     display: block;
-    border-radius: 8px;
+    border-radius: var(--radius-l);
+    box-shadow: var(--shadow-m);
+    background: #cde3b8;
   }
   .ground {
     fill: #cde3b8;
@@ -1150,20 +1182,32 @@
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(20, 30, 15, 0.4);
+    backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .popup {
-    background: #fff;
-    border-radius: 10px;
-    padding: 1.2rem;
+    background: var(--surface);
+    border-radius: var(--radius-l);
+    padding: 1.3rem;
     min-width: 320px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-l);
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    animation: popup-in 0.18s ease;
+  }
+  @keyframes popup-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
   .popup h3 {
     margin: 0 0 0.4rem;
@@ -1269,13 +1313,14 @@
   .detail-panel {
     width: 250px;
     flex-shrink: 0;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-l);
     padding: 0.9rem;
     align-self: stretch;
     max-height: 100%;
     overflow-y: auto;
+    box-shadow: var(--shadow-m);
   }
   .detail-header {
     display: flex;
@@ -1304,10 +1349,11 @@
     color: #666;
   }
   .planting-card {
-    border: 1px solid #e2e2e2;
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-m);
     padding: 0.6rem;
     margin-bottom: 0.7rem;
+    background: var(--green-50);
   }
   .planting-card h3 {
     margin: 0;

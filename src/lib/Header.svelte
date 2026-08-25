@@ -97,9 +97,12 @@
     display: flex;
     align-items: center;
     gap: 2rem;
-    padding: 0.6rem 1.2rem;
-    background: #2d4a22;
+    padding: 0.55rem 1.2rem;
+    background: linear-gradient(120deg, #1e3317 0%, #2d4a22 55%, #3d6830 100%);
     color: #fff;
+    box-shadow: 0 2px 12px rgba(30, 51, 23, 0.25);
+    position: relative;
+    z-index: 10;
   }
   .brand {
     display: flex;
@@ -108,31 +111,59 @@
   }
   .logo {
     font-size: 1.6rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   }
   h1 {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
   nav {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.25rem;
     flex: 1;
+    background: rgba(0, 0, 0, 0.22);
+    padding: 0.25rem;
+    border-radius: 999px;
+    max-width: fit-content;
   }
-  button {
+  nav button {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    padding: 0.4rem 0.9rem;
-    border-radius: 6px;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
+    font-weight: 500;
   }
-  button:hover {
-    background: rgba(255, 255, 255, 0.15);
+  nav button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
   }
   nav button.active {
     background: #6da653;
-    border-color: #6da653;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  }
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+  .actions button {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .actions button:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.45);
   }
   /* Surbrillance du bouton d'écran pendant le tutoriel : le bouton passe
      au-dessus du voile sombre (z-index > overlay) avec un halo pulsé */
@@ -140,7 +171,7 @@
     position: relative;
     z-index: 301;
     background: #6da653;
-    border-color: #fff;
+    color: #fff;
     animation: tuto-pulse 1.4s ease-in-out infinite;
   }
   @keyframes tuto-pulse {
@@ -153,9 +184,5 @@
       box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.55),
         0 0 26px 10px rgba(109, 166, 83, 0.6);
     }
-  }
-  .actions {
-    display: flex;
-    gap: 0.5rem;
   }
 </style>

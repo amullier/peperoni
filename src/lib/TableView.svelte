@@ -277,27 +277,27 @@
   }
   .group-toggle {
     display: flex;
-    border: 1px solid #4a7c3a;
-    border-radius: 6px;
-    overflow: hidden;
+    gap: 0.2rem;
+    background: #e6ecdf;
+    border-radius: 999px;
+    padding: 0.2rem;
   }
   .group-toggle button {
     border: none;
-    background: #fff;
-    color: #2d4a22;
-    padding: 0.25rem 0.7rem;
+    background: transparent;
+    color: var(--green-800);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
     cursor: pointer;
     font-size: 0.82rem;
   }
-  .group-toggle button + button {
-    border-left: 1px solid #4a7c3a;
-  }
   .group-toggle button:hover {
-    background: #e8f2df;
+    background: rgba(255, 255, 255, 0.7);
   }
   .group-toggle button.active {
-    background: #4a7c3a;
+    background: var(--green-600);
     color: #fff;
+    box-shadow: var(--shadow-s);
   }
   h2 {
     margin: 0;
@@ -310,16 +310,18 @@
     gap: 0.4rem;
   }
   .year-nav button {
-    border: 1px solid #4a7c3a;
-    background: #fff;
-    color: #2d4a22;
-    border-radius: 6px;
-    padding: 0.2rem 0.7rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--green-800);
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
     cursor: pointer;
     font-size: 1rem;
+    box-shadow: var(--shadow-s);
   }
   .year-nav button:hover {
-    background: #e8f2df;
+    background: var(--green-100);
+    border-color: var(--green-500);
   }
   .year {
     font-weight: 700;
@@ -335,14 +337,19 @@
     color: #999;
   }
   .gantt {
-    border: 1px solid #dde8d0;
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-m);
     overflow: hidden;
-    background: #fff;
+    background: var(--surface);
+    box-shadow: var(--shadow-m);
   }
   .row {
     display: flex;
     border-bottom: 1px solid #eef2e8;
+    transition: background 0.12s ease;
+  }
+  .row:not(.header):not(.crop-row):hover {
+    background: var(--green-50);
   }
   .row:last-child {
     border-bottom: none;
@@ -409,14 +416,16 @@
     position: absolute;
     top: 6px;
     bottom: 6px;
-    border-radius: 4px;
+    border-radius: 999px;
   }
   .bar.growth {
-    background: #8fbf6f;
+    background: linear-gradient(180deg, #9bc97c, #82b563);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
   .bar.harvest {
-    background: #e8b93c;
-    border-radius: 0 4px 4px 0;
+    background: linear-gradient(180deg, #f0c855, #e3af2b);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    border-radius: 0 999px 999px 0;
   }
   .sowing-line {
     position: absolute;

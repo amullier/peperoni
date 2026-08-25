@@ -180,8 +180,8 @@
 
 <style>
   .settings-screen {
-    padding: 1rem;
-    max-width: 900px;
+    padding: 1rem 1.5rem;
+    max-width: 1500px;
     margin: 0 auto;
     overflow-y: auto;
     height: 100%;
@@ -208,9 +208,11 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
-    border: 1px solid #e2e2e2;
-    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    box-shadow: var(--shadow-s);
   }
   th,
   td {
@@ -220,10 +222,18 @@
     font-size: 0.85rem;
   }
   th {
-    background: #f0f6e8;
-    color: #2d4a22;
+    background: #eef4e6;
+    color: var(--green-800);
     font-size: 0.72rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  tbody tr {
+    transition: background 0.12s ease;
+  }
+  tbody tr:hover {
+    background: var(--green-50);
   }
   .crop-col {
     text-align: left;

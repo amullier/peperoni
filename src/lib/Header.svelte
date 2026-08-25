@@ -101,8 +101,9 @@
     background: linear-gradient(120deg, #1e3317 0%, #2d4a22 55%, #3d6830 100%);
     color: #fff;
     box-shadow: 0 2px 12px rgba(30, 51, 23, 0.25);
+    /* Pas de z-index ici : il créerait un contexte d'empilement qui
+       plafonnerait le z-index du bouton .tuto sous le voile du tutoriel */
     position: relative;
-    z-index: 10;
   }
   .brand {
     display: flex;

@@ -103,6 +103,12 @@ export function validateData(data) {
             typeof c.id === 'string' &&
             typeof c.name === 'string' &&
             typeof c.category === 'string'
+        ))) &&
+    (data.cropWindows === undefined ||
+      (typeof data.cropWindows === 'object' &&
+        !Array.isArray(data.cropWindows) &&
+        Object.values(data.cropWindows).every(
+          (w) => w && typeof w === 'object'
         )))
   )
 }
@@ -140,6 +146,7 @@ class Store {
   cropOverrides = $state({}) // surcharges des métriques par légume
   hiddenCrops = $state([]) // légumes masqués dans la planification
   customCrops = $state({}) // légumes ajoutés par l'utilisateur (id → crop)
+  cropWindows = $state({}) // surcharges des fenêtres de plantation (id → { plantWindows?, shelterPlantWindows? })
   currentDate = $state(todayISO())
 
   constructor() {
@@ -151,6 +158,7 @@ class Store {
     this.cropOverrides = data.cropOverrides ?? {}
     this.hiddenCrops = data.hiddenCrops ?? []
     this.customCrops = data.customCrops ?? {}
+    this.cropWindows = data.cropWindows ?? {}
   }
 
   save() {
@@ -167,6 +175,7 @@ class Store {
       cropOverrides: this.cropOverrides,
       hiddenCrops: this.hiddenCrops,
       customCrops: this.customCrops,
+      cropWindows: this.cropWindows,
     }
   }
 
@@ -189,6 +198,7 @@ class Store {
     this.cropOverrides = data.cropOverrides ?? {}
     this.hiddenCrops = data.hiddenCrops ?? []
     this.customCrops = data.customCrops ?? {}
+    this.cropWindows = data.cropWindows ?? {}
     this.save()
   }
 
@@ -225,14 +235,36 @@ class Store {
     '#9c640c',
   ]
 
-  // Un légume : depuis le catalogue ou les légumes personnalisés
+  // Un légume : depuis le catalogue ou les légumes personnalisés,
+  // avec ses fenêtres de plantation éventuellement surchargées
   getCrop(id) {
-    return CROPS[id] ?? this.customCrops[id]
+    const base = CROPS[id] ?? this.customCrops[id]
+    if (!base) return base
+    const w = this.cropWindows[id]
+    return w ? { ...base, ...w } : base
   }
 
   // Tous les légumes connus (catalogue + personnalisés)
   get allCrops() {
-    return [...Object.values(CROPS), ...Object.values(this.customCrops)]
+    return [
+      ...Object.keys(CROPS),
+      ...Object.keys(this.customCrops),
+    ].map((id) => this.getCrop(id))
+  }
+
+  // Surcharge une fenêtre de plantation ('plantWindows' ou
+  // 'shelterPlantWindows') pour n'importe quel légume
+  setCropWindows(id, field, windows) {
+    if (this.customCrops[id]) {
+      this.updateCustomCrop(id, { [field]: windows })
+      return
+    }
+    this.cropWindows[id] = { ...this.cropWindows[id], [field]: windows }
+    this.save()
+  }
+
+  hasCropWindowsOverride(id) {
+    return !!this.cropWindows[id]
   }
 
   isCustomCrop(id) {
@@ -318,11 +350,17 @@ class Store {
   resetCropOverrides(cropId) {
     const { [cropId]: _removed, ...rest } = this.cropOverrides
     this.cropOverrides = rest
+    // Rétablit aussi les fenêtres de plantation d'origine (catalogue)
+    const { [cropId]: _removedW, ...restW } = this.cropWindows
+    this.cropWindows = restW
     this.save()
   }
 
   hasCropOverrides(cropId) {
-    return Object.keys(this.cropOverrides[cropId] ?? {}).length > 0
+    return (
+      Object.keys(this.cropOverrides[cropId] ?? {}).length > 0 ||
+      this.hasCropWindowsOverride(cropId)
+    )
   }
 
   // --- Zones ---

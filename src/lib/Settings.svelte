@@ -92,12 +92,12 @@
     editingWindowsCropId = editingWindowsCropId === crop.id ? null : crop.id
   }
 
-  // Ajoute/retire un mois d'une fenêtre de plantation d'un légume ajouté
+  // Ajoute/retire un mois d'une fenêtre de plantation d'un légume
   function toggleMonth(crop, field, month) {
     const months = windowsToMonths(crop[field])
     if (months.has(month)) months.delete(month)
     else months.add(month)
-    store.updateCustomCrop(crop.id, { [field]: monthsToWindows(months) })
+    store.setCropWindows(crop.id, field, monthsToWindows(months))
   }
 
   async function removeCustomCrop(crop) {
@@ -196,7 +196,8 @@
     couvertes par une serre. « Semis en godet » indique si le légume s'élève
     en pépinière avant plantation, et combien de jours avant. Les valeurs
     modifiées sont surlignées ; ↺ rétablit les valeurs d'origine. 👁/🚫
-    affiche ou masque le légume dans l'écran de planification.
+    affiche ou masque le légume dans l'écran de planification. 📅 à côté du
+    nom : dates de plantation possibles (pleine terre et sous abri).
   </p>
 
   {#each cropGroups as group (group.key)}
@@ -231,7 +232,17 @@
                   {hidden ? '🚫' : '👁'}
                 </button>
               </td>
-              <td class="crop-col">{crop.emoji} {crop.name}</td>
+              <td class="crop-col">
+                {crop.emoji} {crop.name}
+                <button
+                  class="calendar"
+                  class:open={editingWindowsCropId === crop.id}
+                  title="Dates de plantation possibles"
+                  onclick={() => toggleWindowsEditor(crop)}
+                >
+                  📅
+                </button>
+              </td>
               {#each FIELDS as field (field.key)}
                 <td>
                   <input
@@ -279,13 +290,6 @@
                   </button>
                 {/if}
                 {#if store.isCustomCrop(crop.id)}
-                  <button
-                    class="reset"
-                    title="Dates de plantation possibles"
-                    onclick={() => toggleWindowsEditor(crop)}
-                  >
-                    📅
-                  </button>
                   <button
                     class="reset"
                     title="Supprimer ce légume"
@@ -446,6 +450,23 @@
   .crop-col {
     text-align: left;
     white-space: nowrap;
+  }
+  .crop-col .calendar {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.05rem 0.2rem;
+    border-radius: 5px;
+    opacity: 0.55;
+  }
+  .crop-col .calendar:hover {
+    opacity: 1;
+    background: #eef4e6;
+  }
+  .crop-col .calendar.open {
+    opacity: 1;
+    background: #e8f2df;
   }
   tr.modified {
     background: #fffaea;

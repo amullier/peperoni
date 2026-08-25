@@ -1,6 +1,5 @@
 <script>
   import { store } from './store.svelte.js'
-  import { CROPS } from './crops.js'
   import { formatFR, fromISO, toISO, todayISO } from './dates.js'
 
   const MONTHS = [
@@ -39,7 +38,7 @@
     const r = {
       planting: p,
       zone,
-      crop: CROPS[p.cropId],
+      crop: store.getCrop(p.cropId),
       sowing: store.plantingSowingDate(p),
       start: p.plantedDate,
       harvest: store.plantingHarvestStart(p),
@@ -60,7 +59,7 @@
   let rows = $derived.by(() => {
     const groups = []
     if (groupBy === 'crop') {
-      for (const crop of Object.values(CROPS)) {
+      for (const crop of store.allCrops) {
         const plantings = store.plantings
           .filter((p) => p.cropId === crop.id)
           .map(enrich)

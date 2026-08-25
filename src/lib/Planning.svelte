@@ -1,8 +1,11 @@
 <script>
   import { store } from './store.svelte.js'
-  import { CROPS, CATEGORIES, getCrop, monthInWindows } from './crops.js'
+  import { CATEGORIES, monthInWindows } from './crops.js'
   import { getTree } from './trees.js'
   import { formatFR, todayISO, fromISO, toISO } from './dates.js'
+
+  // Un légume par id : catalogue + légumes personnalisés
+  const getCrop = (id) => store.getCrop(id)
 
   const W = 1000
   const H = 600
@@ -116,7 +119,7 @@
     Object.entries(CATEGORIES).map(([key, label]) => ({
       key,
       label,
-      crops: Object.values(CROPS)
+      crops: store.allCrops
         .filter((c) => c.category === key && !store.isCropHidden(c.id))
         .map((c) => ({ ...c, plantable: plantability(c) }))
         .sort(

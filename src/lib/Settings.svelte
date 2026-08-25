@@ -1,12 +1,39 @@
 <script>
   import { store } from './store.svelte.js'
-  import { CROPS, CATEGORIES } from './crops.js'
+  import { CATEGORIES } from './crops.js'
 
-  const cropGroups = Object.entries(CATEGORIES).map(([key, label]) => ({
-    key,
-    label,
-    crops: Object.values(CROPS).filter((c) => c.category === key),
-  }))
+  let cropGroups = $derived(
+    Object.entries(CATEGORIES).map(([key, label]) => ({
+      key,
+      label,
+      crops: store.allCrops.filter((c) => c.category === key),
+    }))
+  )
+
+  // --- Ajout d'un légume personnalisé ---
+  let newName = $state('')
+  let newEmoji = $state('')
+  let newCategory = $state('fruit')
+
+  function addCrop() {
+    const name = newName.trim()
+    if (!name) return
+    store.addCustomCrop({
+      name,
+      emoji: newEmoji.trim(),
+      category: newCategory,
+    })
+    newName = ''
+    newEmoji = ''
+  }
+
+  function removeCustomCrop(crop) {
+    const hasPlantings = store.plantings.some((p) => p.cropId === crop.id)
+    const msg = hasPlantings
+      ? `Supprimer « ${crop.name} » et ses plantations ?`
+      : `Supprimer « ${crop.name} » ?`
+    if (confirm(msg)) store.removeCustomCrop(crop.id)
+  }
 
   const FIELDS = [
     { key: 'rowSpacingCm', label: 'Entre rangs (cm)', min: 1 },
@@ -160,6 +187,15 @@
                     ↺
                   </button>
                 {/if}
+                {#if store.isCustomCrop(crop.id)}
+                  <button
+                    class="reset"
+                    title="Supprimer ce légume"
+                    onclick={() => removeCustomCrop(crop)}
+                  >
+                    🗑
+                  </button>
+                {/if}
               </td>
             </tr>
           {/each}
@@ -167,6 +203,35 @@
       </table>
     </div>
   {/each}
+
+  <h3>Ajouter un légume</h3>
+  <form class="add-crop" onsubmit={(e) => (e.preventDefault(), addCrop())}>
+    <input
+      type="text"
+      class="emoji-input"
+      placeholder="🥦"
+      maxlength="4"
+      bind:value={newEmoji}
+      title="Emoji (optionnel)"
+    />
+    <input
+      type="text"
+      class="name-input"
+      placeholder="Nom du légume…"
+      bind:value={newName}
+      required
+    />
+    <select bind:value={newCategory}>
+      {#each Object.entries(CATEGORIES) as [key, label] (key)}
+        <option value={key}>{label}</option>
+      {/each}
+    </select>
+    <button type="submit" disabled={!newName.trim()}>＋ Ajouter</button>
+    <p class="add-hint">
+      Le légume est créé avec des valeurs par défaut (plantable toute
+      l'année) : ajustez-les ensuite dans le tableau ci-dessus.
+    </p>
+  </form>
 
   <h3>Zone dangereuse</h3>
   <div class="danger-zone">
@@ -302,6 +367,52 @@
   }
   button.reset:hover {
     background: #f2f2f2;
+  }
+  .add-crop {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #ddd);
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+  }
+  .add-crop input,
+  .add-crop select {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  .add-crop .emoji-input {
+    width: 3rem;
+    text-align: center;
+  }
+  .add-crop .name-input {
+    width: 14rem;
+  }
+  .add-crop button {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #4a7c3a;
+    background: #4a7c3a;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .add-crop button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .add-crop button:not(:disabled):hover {
+    background: #3d6830;
+  }
+  .add-crop .add-hint {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.78rem;
+    color: #888;
   }
   .danger-zone {
     border: 1px solid #e0b4b4;

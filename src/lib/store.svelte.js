@@ -92,7 +92,18 @@ export function validateData(data) {
         ))) &&
     (data.hiddenCrops === undefined ||
       (Array.isArray(data.hiddenCrops) &&
-        data.hiddenCrops.every((id) => typeof id === 'string')))
+        data.hiddenCrops.every((id) => typeof id === 'string'))) &&
+    (data.customCrops === undefined ||
+      (typeof data.customCrops === 'object' &&
+        !Array.isArray(data.customCrops) &&
+        Object.values(data.customCrops).every(
+          (c) =>
+            c &&
+            typeof c === 'object' &&
+            typeof c.id === 'string' &&
+            typeof c.name === 'string' &&
+            typeof c.category === 'string'
+        )))
   )
 }
 
@@ -128,6 +139,7 @@ class Store {
   serres = $state([])
   cropOverrides = $state({}) // surcharges des métriques par légume
   hiddenCrops = $state([]) // légumes masqués dans la planification
+  customCrops = $state({}) // légumes ajoutés par l'utilisateur (id → crop)
   currentDate = $state(todayISO())
 
   constructor() {
@@ -138,6 +150,7 @@ class Store {
     this.serres = data.serres ?? []
     this.cropOverrides = data.cropOverrides ?? {}
     this.hiddenCrops = data.hiddenCrops ?? []
+    this.customCrops = data.customCrops ?? {}
   }
 
   save() {
@@ -153,6 +166,7 @@ class Store {
       serres: this.serres,
       cropOverrides: this.cropOverrides,
       hiddenCrops: this.hiddenCrops,
+      customCrops: this.customCrops,
     }
   }
 
@@ -173,6 +187,7 @@ class Store {
     this.serres = data.serres ?? []
     this.cropOverrides = data.cropOverrides ?? {}
     this.hiddenCrops = data.hiddenCrops ?? []
+    this.customCrops = data.customCrops ?? {}
     this.save()
   }
 
@@ -195,10 +210,75 @@ class Store {
     this.save()
   }
 
+  // --- Légumes personnalisés ---
+
+  // Palette de couleurs attribuées aux légumes ajoutés par l'utilisateur
+  static CUSTOM_CROP_COLORS = [
+    '#7d6608',
+    '#1a5276',
+    '#7b241c',
+    '#4a235a',
+    '#0e6251',
+    '#784212',
+    '#2c3e50',
+    '#9c640c',
+  ]
+
+  // Un légume : depuis le catalogue ou les légumes personnalisés
+  getCrop(id) {
+    return CROPS[id] ?? this.customCrops[id]
+  }
+
+  // Tous les légumes connus (catalogue + personnalisés)
+  get allCrops() {
+    return [...Object.values(CROPS), ...Object.values(this.customCrops)]
+  }
+
+  isCustomCrop(id) {
+    return !!this.customCrops[id]
+  }
+
+  addCustomCrop({ name, emoji, category }) {
+    const id = 'custom-' + uid()
+    const colors = Store.CUSTOM_CROP_COLORS
+    const color =
+      colors[Object.keys(this.customCrops).length % colors.length]
+    this.customCrops[id] = {
+      id,
+      name,
+      emoji: emoji || '🥦',
+      color,
+      category,
+      // Métriques par défaut, ajustables ensuite dans le tableau
+      harvestFromMonths: 2,
+      totalMonths: 4,
+      shelterHarvestFromMonths: 1,
+      shelterTotalMonths: 4,
+      rowSpacingCm: 40,
+      plantSpacingCm: 20,
+      // Plantable toute l'année par défaut
+      plantWindows: [[1, 12]],
+      shelterPlantWindows: [[1, 12]],
+      varieties: [],
+    }
+    this.save()
+    return this.customCrops[id]
+  }
+
+  removeCustomCrop(id) {
+    if (!this.customCrops[id]) return
+    const { [id]: _removed, ...rest } = this.customCrops
+    this.customCrops = rest
+    this.plantings = this.plantings.filter((p) => p.cropId !== id)
+    this.hiddenCrops = this.hiddenCrops.filter((c) => c !== id)
+    this.resetCropOverrides(id)
+    this.save()
+  }
+
   // --- Métriques des légumes (défauts + surcharges du paramétrage) ---
 
   cropMetrics(cropId) {
-    const base = CROPS[cropId] ?? {}
+    const base = this.getCrop(cropId) ?? {}
     const o = this.cropOverrides[cropId] ?? {}
     return {
       // Début de récolte possible (mois après plantation)

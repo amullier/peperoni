@@ -593,6 +593,15 @@
           </g>
         {/each}
       </svg>
+      {#if selectedCropId}
+        <div class="planting-banner" role="status">
+          <span>
+            🌱 Mode saisie : {getCrop(selectedCropId).name.toLowerCase()} —
+            Échap ou
+          </span>
+          <button onclick={cancelSelection}>✓ Quitter la saisie</button>
+        </div>
+      {/if}
     </div>
 
     {#if detailZone && detailItems.length > 0}
@@ -1115,6 +1124,35 @@
     font-size: 0.8rem;
   }
   .reset-view:hover {
+    background: #e8f2df;
+  }
+  .planting-banner {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    background: rgba(45, 74, 34, 0.92);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+  }
+  .planting-banner button {
+    padding: 0.25rem 0.7rem;
+    border: none;
+    border-radius: 999px;
+    background: #fff;
+    color: #2d4a22;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .planting-banner button:hover {
     background: #e8f2df;
   }
   svg.panning {

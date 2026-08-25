@@ -192,4 +192,37 @@
         0 0 26px 10px rgba(109, 166, 83, 0.6);
     }
   }
+
+  /* --- Responsive (tablette / mobile) --- */
+  @media (max-width: 880px) {
+    header {
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      padding: 0.5rem 0.8rem;
+    }
+    nav {
+      order: 3;
+      flex-basis: 100%;
+      max-width: none;
+      justify-content: space-between;
+    }
+    nav button {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.85rem;
+      flex: 1;
+    }
+  }
+  @media (max-width: 560px) {
+    h1 {
+      font-size: 1.05rem;
+    }
+    .actions button {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.78rem;
+    }
+    nav button {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.3rem;
+    }
+  }
 </style>

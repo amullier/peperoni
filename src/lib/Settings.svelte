@@ -398,6 +398,11 @@
     overflow-y: auto;
     height: 100%;
   }
+  @media (max-width: 700px) {
+    .settings-screen {
+      padding: 0.6rem;
+    }
+  }
   h2 {
     margin: 0 0 0.4rem;
     font-size: 1.2rem;
@@ -668,6 +673,7 @@
     align-items: center;
     gap: 1rem;
     justify-content: space-between;
+    flex-wrap: wrap;
   }
   .danger-zone p {
     margin: 0;

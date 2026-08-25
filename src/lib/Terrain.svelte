@@ -1227,6 +1227,26 @@
     overflow: hidden;
     box-sizing: border-box;
   }
+  /* Tablette / mobile : canvas au-dessus, panneau latéral empilé dessous */
+  @media (max-width: 880px) {
+    .terrain-screen {
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 0.6rem;
+      gap: 0.6rem;
+    }
+    .terrain-screen aside {
+      order: 2;
+      width: 100%;
+      overflow-y: visible;
+    }
+    .terrain-screen .canvas-wrap {
+      order: 1;
+      flex: none;
+      height: 55dvh;
+      min-height: 300px;
+    }
+  }
   aside {
     width: 260px;
     flex-shrink: 0;
@@ -1658,7 +1678,7 @@
     background: var(--surface);
     border-radius: var(--radius-l);
     padding: 1.3rem;
-    min-width: 300px;
+    min-width: min(300px, calc(100vw - 2rem));
     box-shadow: var(--shadow-l);
     animation: popup-in 0.18s ease;
   }

@@ -50,6 +50,8 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
+    /* Hauteur réelle du viewport sur mobile (barres du navigateur) */
+    height: 100dvh;
     overflow: hidden;
   }
   main {

@@ -273,6 +273,7 @@
     align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
   }
   .group-toggle {
     display: flex;
@@ -532,5 +533,23 @@
   .swatch.cursor-s {
     background: #2d4a22;
     width: 3px;
+  }
+
+  /* --- Responsive (mobile) : colonne de libellés réduite --- */
+  @media (max-width: 700px) {
+    .table-screen {
+      padding: 0.6rem;
+    }
+    .label {
+      width: 110px;
+      font-size: 0.72rem;
+      padding: 0.3rem 0.4rem;
+    }
+    .zone-label {
+      padding-left: 0.7rem;
+    }
+    .count {
+      display: none;
+    }
   }
 </style>

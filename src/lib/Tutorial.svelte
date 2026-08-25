@@ -181,6 +181,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
   .actions .spacer {
     flex: 1;

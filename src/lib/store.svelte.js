@@ -1,6 +1,5 @@
 // Store global de l'application (Svelte 5 runes)
 import { CROPS } from './crops.js'
-import { TREES } from './trees.js'
 import { addDays, addMonths, compareISO, todayISO } from './dates.js'
 
 const STORAGE_KEY = 'peperoni-data'
@@ -70,8 +69,7 @@ export function validateData(data) {
         typeof t.y === 'number' &&
         (t.variety === undefined ||
           t.variety === null ||
-          typeof t.variety === 'string') &&
-        (t.name === undefined || t.name === null || typeof t.name === 'string')
+          typeof t.variety === 'string')
     ) &&
     (data.serres === undefined || Array.isArray(data.serres)) &&
     (data.serres ?? []).every(
@@ -308,15 +306,7 @@ class Store {
   // --- Arbres (éléments fixes) ---
 
   addTree(type, x, y, variety = null) {
-    const count = this.trees.filter((t) => t.type === type).length
-    const tree = {
-      id: uid(),
-      type,
-      x,
-      y,
-      variety,
-      name: `${TREES[type]?.name ?? type} ${count + 1}`,
-    }
+    const tree = { id: uid(), type, x, y, variety }
     this.trees.push(tree)
     this.save()
     return tree

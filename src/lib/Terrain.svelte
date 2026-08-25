@@ -33,7 +33,7 @@
   let resizing = $state(null) // { id, left, right, top, bottom, moved } pendant un redimensionnement
   let draggingTree = $state(null) // { id, moved } pendant un déplacement d'arbre
   let editingId = $state(null)
-  let editingKind = $state(null) // 'zone' | 'tree' | 'serre'
+  let editingKind = $state(null) // 'zone' | 'serre'
   let editName = $state('')
   let selectedId = $state(null)
   let selectedTreeId = $state(null)
@@ -137,9 +137,9 @@
     return (getTree(tree.type).canopyM * UNITS_PER_M) / 2
   }
 
-  // Nom affiché d'un arbre (repli sur le type pour les anciens fichiers)
-  function treeName(tree, i = 0) {
-    return tree.name || `${getTree(tree.type).name} ${i + 1}`
+  // Nom affiché d'un arbre : nom du type (ex. « Pommier »)
+  function treeName(tree) {
+    return getTree(tree.type).name
   }
 
   function toSvgPoint(event) {
@@ -616,7 +616,6 @@
     if (editingId && editName.trim()) {
       const name = editName.trim()
       if (editingKind === 'zone') store.renameZone(editingId, name)
-      else if (editingKind === 'tree') store.updateTree(editingId, { name })
       else if (editingKind === 'serre') store.updateSerre(editingId, { name })
     }
     editingId = null
@@ -861,48 +860,30 @@
     {/if}
     {#if store.trees.length > 0}
       <ul>
-        {#each store.trees as tree, i (tree.id)}
+        {#each store.trees as tree (tree.id)}
           <li class:selected={selectedTreeId === tree.id}>
             <div class="zone-row">
-              {#if editingId === tree.id}
-                <!-- svelte-ignore a11y_autofocus -->
-                <input
-                  type="text"
-                  bind:value={editName}
-                  onblur={commitRename}
-                  onkeydown={(e) => e.key === 'Enter' && commitRename()}
-                  autofocus
-                />
-              {:else}
-                <button
-                  class="zone-name"
-                  onclick={() => ((selectedTreeId = tree.id), (selectedId = null))}
-                >
-                  {getTree(tree.type).emoji} {treeName(tree, i)}
-                  {#if tree.variety}
-                    <span class="variety">({tree.variety})</span>
-                  {/if}
-                </button>
+              <button
+                class="zone-name"
+                onclick={() => ((selectedTreeId = tree.id), (selectedId = null))}
+              >
+                {getTree(tree.type).emoji} {treeName(tree)}
+                {#if tree.variety}
+                  <span class="variety">({tree.variety})</span>
+                {/if}
+              </button>
+              {#if getTree(tree.type).varieties.length > 0}
                 <button
                   class="icon"
-                  title="Renommer"
-                  onclick={() => startRename(tree, 'tree')}
+                  title="Choisir la variété"
+                  onclick={() => openVarietyPopup(tree)}
                 >
-                  ✏️
-                </button>
-                {#if getTree(tree.type).varieties.length > 0}
-                  <button
-                    class="icon"
-                    title="Choisir la variété"
-                    onclick={() => openVarietyPopup(tree)}
-                  >
-                    🏷️
-                  </button>
-                {/if}
-                <button class="icon" title="Supprimer" onclick={() => deleteTree(tree)}>
-                  🗑️
+                  🏷️
                 </button>
               {/if}
+              <button class="icon" title="Supprimer" onclick={() => deleteTree(tree)}>
+                🗑️
+              </button>
             </div>
           </li>
         {/each}

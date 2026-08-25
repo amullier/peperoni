@@ -586,7 +586,7 @@
               x={tree.x}
               y={tree.y + (getTree(tree.type).canopyM * UNITS_PER_M) / 2 + 14}
             >
-              {tree.name ?? getTree(tree.type).name}{tree.variety
+              {getTree(tree.type).name}{tree.variety
                 ? ` (${tree.variety})`
                 : ''}
             </text>

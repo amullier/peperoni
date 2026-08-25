@@ -17,7 +17,7 @@ export const CROPS = {
   poireau: {
     id: 'poireau',
     name: 'Poireau',
-    emoji: '🥬',
+    emoji: '🍃',
     color: '#4a7c3a',
     category: 'feuille',
     harvestFromMonths: 5,
@@ -422,6 +422,58 @@ const NURSERY_DAYS = {
 
 for (const [id, days] of Object.entries(NURSERY_DAYS)) {
   if (CROPS[id]) CROPS[id].nurseryDays = days
+}
+
+// Variétés usuelles par légume (proposées lors du choix de variété
+// d'une plantation ; liste indicative, la plantation peut rester sans
+// variété).
+const VARIETIES = {
+  // Feuilles
+  poireau: ['Bleu de Solaise', 'Monstrueux de Carentan', "Gros long d'été"],
+  laitue: ['Batavia', 'Feuille de chêne', 'Romaine', 'Iceberg'],
+  epinard: ["Géant d'hiver", 'Monstrueux de Viroflay'],
+  chou: ['Cabus', 'Milan', 'Rouge', 'Cœur de bœuf'],
+  blette: ['Blonde à carde blanche', 'Verte à carde blanche', 'Rouge'],
+  celeri: ['Plein blanc doré', 'Vert d\u2019Elne'],
+  mache: ['Verte de Cambrai', 'À grosse graine'],
+  // Fruits
+  tomate: [
+    'Cœur de bœuf',
+    'Marmande',
+    'Roma',
+    'Cerise',
+    'Noire de Crimée',
+    'Ananas',
+  ],
+  courgette: ['Verte de Milan', 'Ronde de Nice', 'Gold Rush'],
+  concombre: ['Marketmore', 'Noa', 'Tanja'],
+  poivron: ['California Wonder', 'Doux des Landes', 'Corno di Toro'],
+  aubergine: ['De Barbentane', 'Black Beauty', 'Violette de Florence'],
+  courges: [
+    'Potiron',
+    'Potimarron',
+    'Butternut',
+    'Spaghetti',
+    'Musquée de Provence',
+  ],
+  haricotVert: ['Contender', 'Fin de Bagnols', 'Purple Queen'],
+  petitPois: ['Merveille de Kelvedon', 'Douce Provence'],
+  melon: ['Charentais', 'Canari', 'Galia'],
+  mais: ['Golden Bantam'],
+  // Racines
+  carotte: ['Nantaise', 'De Colmar', 'Touchon'],
+  pommeDeTerre: ['Charlotte', 'Amandine', 'Bintje', 'Ratte'],
+  radis: ['De 18 jours', 'Flamboyant', 'Noir long'],
+  betterave: ['Detroit', 'Crapaudine', 'Chioggia'],
+  navet: ['De Nancy', "Boule d'or"],
+  panais: ['Demi-long de Guernesey'],
+  oignon: ['Jaune paille', 'Rouge de Brunswick', 'Blanc de Paris'],
+  echalote: ['Grise', 'Longue', 'Ronde de Jersey'],
+  ail: ['Blanc de Lomagne', 'Rose de Lautrec', 'Violet de Cadours'],
+}
+
+for (const crop of Object.values(CROPS)) {
+  crop.varieties = VARIETIES[crop.id] ?? []
 }
 
 // Un mois (1-12) est-il dans l'une des plages ?

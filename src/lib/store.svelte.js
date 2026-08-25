@@ -55,6 +55,9 @@ export function validateData(data) {
         (p.plantSpacingCm === undefined ||
           typeof p.plantSpacingCm === 'number') &&
         (p.mode === undefined || typeof p.mode === 'string') &&
+        (p.variety === undefined ||
+          p.variety === null ||
+          typeof p.variety === 'string') &&
         (p.plants === undefined ||
           (Array.isArray(p.plants) &&
             p.plants.every(

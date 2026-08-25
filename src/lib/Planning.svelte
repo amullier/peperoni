@@ -630,6 +630,9 @@
           <div class="planting-card">
             <h3>
               {item.crop.emoji} {item.crop.name}
+              {#if item.planting.variety}
+                <span class="variety-label">({item.planting.variety})</span>
+              {/if}
               <span class="status">
                 {item.status === 'ready' ? '✅' : '🌱'}
               </span>
@@ -637,6 +640,25 @@
 
             {#if editingPlantingId === item.planting.id}
               <dl>
+                <dt>Variété</dt>
+                <dd>
+                  <input
+                    type="text"
+                    list="varieties-{item.crop.id}"
+                    placeholder="— Sans variété —"
+                    value={item.planting.variety ?? ''}
+                    onchange={(e) =>
+                      editPlanting(item.planting, {
+                        variety: e.target.value.trim() || null,
+                      })}
+                  />
+                  <datalist id="varieties-{item.crop.id}">
+                    {#each item.crop.varieties ?? [] as v (v)}
+                      <option value={v}></option>
+                    {/each}
+                  </datalist>
+                </dd>
+
                 <dt>Planté le</dt>
                 <dd>
                   <input
@@ -1402,6 +1424,14 @@
   }
   .planting-card .status {
     font-size: 0.85rem;
+  }
+  .planting-card .variety-label {
+    font-size: 0.8rem;
+    font-weight: normal;
+    font-style: italic;
+    color: #666;
+    flex: 1;
+    margin-left: 0.3rem;
   }
   .card-actions {
     display: flex;

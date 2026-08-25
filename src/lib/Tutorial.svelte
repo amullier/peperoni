@@ -58,11 +58,6 @@
     ongoto?.('terrain')
     close()
   }
-
-  function goSee() {
-    ongoto?.(current.screen)
-    close()
-  }
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && close()} />
@@ -92,7 +87,6 @@
     <div class="actions">
       <button class="secondary" onclick={close}>Passer le tutoriel</button>
       <span class="spacer"></span>
-      <button class="secondary" onclick={goSee}>👀 Voir l'écran</button>
       {#if step > 0}
         <button class="secondary" onclick={() => (step -= 1)}>
           ‹ Précédent

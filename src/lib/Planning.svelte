@@ -1,5 +1,6 @@
 <script>
   import { store } from './store.svelte.js'
+  import { GARDEN_MARGIN_M } from './store.svelte.js'
   import { CATEGORIES, monthInWindows } from './crops.js'
   import { getTree } from './trees.js'
   import { formatFR, todayISO, fromISO, toISO } from './dates.js'
@@ -8,27 +9,50 @@
   // Un légume par id : catalogue + légumes personnalisés
   const getCrop = (id) => store.getCrop(id)
 
-  const W = 1000
-  const H = 600
   const UNITS_PER_M = 60
+  // Jardin paramétrable + marge de 15 m tout autour (comme sur le Terrain)
+  const MARGIN = GARDEN_MARGIN_M * UNITS_PER_M
+  let gardenW = $derived(store.garden.w * UNITS_PER_M)
+  let gardenH = $derived(store.garden.h * UNITS_PER_M)
+  let W = $derived(gardenW + 2 * MARGIN)
+  let H = $derived(gardenH + 2 * MARGIN)
 
   let selectedCropId = $state(null)
-  let cropConfig = $state(null) // { mode, rows, rowSpacingCm, plantSpacingCm }
+  let cropConfig = $state(null) // { mode, rows, rowSpacingCm, plantSpacingCm, rowLengthM }
   let configPopup = $state(null) // { cropId } popup de configuration
   let cfgMode = $state('rows') // 'rows' (au rang) | 'plants' (par plant)
   let cfgRows = $state(1)
   let cfgRowSpacing = $state(40)
   let cfgPlantSpacing = $state(20)
+  let cfgRowLength = $state('') // longueur des rangs en mètres ('' = toute la zone)
 
   // --- Vue : zoom (Ctrl + molette) et pan (clic milieu), comme sur le Terrain ---
 
   let svgEl
-  let view = $state({ x: 0, y: 0, w: W, h: H })
+  // Vue par défaut : cadre tout le jardin (quel que soit sa taille),
+  // avec une petite marge de 1 m autour
+  let defaultView = $derived.by(() => {
+    const side = Math.max(gardenW, gardenH) + 2 * UNITS_PER_M
+    return {
+      x: (W - side) / 2,
+      y: (H - side) / 2,
+      w: side,
+      h: side,
+    }
+  })
+  // svelte-ignore state_referenced_locally -- valeur initiale voulue
+  let view = $state({ ...defaultView })
   let panning = $state(null) // { startX, startY, viewX, viewY }
-  let isZoomed = $derived(view.w < W || view.x !== 0 || view.y !== 0)
+  let isZoomed = $derived(
+    view.w !== defaultView.w ||
+      view.x !== defaultView.x ||
+      view.y !== defaultView.y
+  )
 
-  function clampView(value, max) {
-    return Math.max(0, Math.min(max, value))
+  function clampView(value, viewSize, worldSize) {
+    // Garde toujours au moins 1 m de terrain visible dans la vue
+    const margin = UNITS_PER_M
+    return Math.max(margin - viewSize, Math.min(worldSize - margin, value))
   }
 
   function toSvgPoint(event) {
@@ -47,14 +71,14 @@
     const factor = event.deltaY > 0 ? 1.2 : 1 / 1.2
     const newW = Math.max(W / 10, Math.min(W, view.w * factor))
     const newH = newW * (H / W)
-    view.x = clampView(p.x - ((p.x - view.x) * newW) / view.w, W - newW)
-    view.y = clampView(p.y - ((p.y - view.y) * newH) / view.h, H - newH)
+    view.x = clampView(p.x - ((p.x - view.x) * newW) / view.w, newW, W)
+    view.y = clampView(p.y - ((p.y - view.y) * newH) / view.h, newH, H)
     view.w = newW
     view.h = newH
   }
 
   function resetView() {
-    view = { x: 0, y: 0, w: W, h: H }
+    view = { ...defaultView }
   }
 
   $effect(() => {
@@ -83,11 +107,13 @@
       const scale = view.w / svgEl.clientWidth
       view.x = clampView(
         panning.viewX - (event.clientX - panning.startX) * scale,
-        W - view.w
+        view.w,
+        W
       )
       view.y = clampView(
         panning.viewY - (event.clientY - panning.startY) * scale,
-        H - view.h
+        view.h,
+        H
       )
     }
   }
@@ -143,6 +169,7 @@
     cfgRows = 1
     cfgRowSpacing = metrics.rowSpacingCm
     cfgPlantSpacing = metrics.plantSpacingCm
+    cfgRowLength = ''
     configPopup = { cropId: id }
   }
 
@@ -160,6 +187,10 @@
                 1,
                 Math.round(Number(cfgPlantSpacing) || 20)
               ),
+              rowLengthM:
+                Number(cfgRowLength) > 0
+                  ? Math.round(Number(cfgRowLength) * 10) / 10
+                  : null,
             }
     }
     configPopup = null
@@ -186,6 +217,12 @@
       const plantGap = (p.plantSpacingCm ?? 20) * cmToUnits
       const rows = p.rows ?? 1
       const margin = Math.max(6, plantGap / 2)
+      // Longueur de rang limitée si demandée (en mètres, sinon toute la zone)
+      const maxLen = (horizontal ? zone.w : zone.h) - margin * 2
+      const rowLen =
+        p.rowLengthM != null
+          ? Math.min(maxLen, p.rowLengthM * UNITS_PER_M)
+          : maxLen
       if (index > 0) offset += rowGap // séparateur entre plantations
       const segs = []
       for (let i = 0; i < rows; i++) {
@@ -194,7 +231,7 @@
         if (horizontal) {
           const y = zone.y + d
           const x1 = zone.x + margin
-          const x2 = zone.x + zone.w - margin
+          const x2 = x1 + rowLen
           const plants = []
           for (let px = x1; px <= x2 + 0.01; px += plantGap)
             plants.push({ x: px, y })
@@ -202,7 +239,7 @@
         } else {
           const x = zone.x + d
           const y1 = zone.y + margin
-          const y2 = zone.y + zone.h - margin
+          const y2 = y1 + rowLen
           const plants = []
           for (let py = y1; py <= y2 + 0.01; py += plantGap)
             plants.push({ x, y: py })
@@ -303,6 +340,7 @@
       rows: planting.rows,
       rowSpacingCm: planting.rowSpacingCm,
       plantSpacingCm: planting.plantSpacingCm,
+      rowLengthM: planting.rowLengthM,
     }
     store.updatePlanting(planting.id, patch)
     const zone = detailZone
@@ -388,7 +426,19 @@
 
 <div class="planning-screen">
   <div class="timeline-wrap">
-    <span class="timeline-year">{timelineYear}</span>
+    <input
+      type="date"
+      value={store.currentDate}
+      title="Effacer la date pour revenir à aujourd'hui"
+      onchange={(e) => (store.currentDate = e.target.value || todayISO())}
+    />
+    <button
+      class="year-nav"
+      title="Année précédente"
+      onclick={() => store.shiftDate(-12)}
+    >
+      ‹
+    </button>
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
       class="timeline"
@@ -409,20 +459,13 @@
       {/if}
       <div class="cursor" style="left: {selectedPct}%"></div>
     </div>
-  </div>
-
-  <div class="timebar">
-    <label>
-      📅 Date :
-      <input type="date" bind:value={store.currentDate} />
-    </label>
-    <button onclick={() => store.shiftDate(1)}>+1 mois</button>
-    <button onclick={() => store.shiftDate(6)}>+6 mois</button>
-    <button onclick={() => store.shiftDate(12)}>+1 an</button>
-    <button class="today" onclick={() => (store.currentDate = todayISO())}>
-      Aujourd'hui
+    <button
+      class="year-nav"
+      title="Année suivante"
+      onclick={() => store.shiftDate(12)}
+    >
+      ›
     </button>
-    <span class="date-label">{formatFR(store.currentDate)}</span>
   </div>
 
   <div class="main">
@@ -522,6 +565,14 @@
           class="ground"
           role="presentation"
           onclick={() => selectedCropId && cancelSelection()}
+        />
+        <!-- Limites du jardin (pointillés discrets) -->
+        <rect
+          x={MARGIN}
+          y={MARGIN}
+          width={gardenW}
+          height={gardenH}
+          class="garden-border"
         />
 
         <!-- Serres (surbrillance sous les zones de culture) -->
@@ -740,6 +791,24 @@
                         )}
                     />
                   </dd>
+
+                  <dt>Longueur des rangs (m)</dt>
+                  <dd>
+                    <input
+                      type="number"
+                      min="0.5"
+                      step="0.1"
+                      placeholder="Toute la zone"
+                      value={item.planting.rowLengthM ?? ''}
+                      onchange={(e) =>
+                        editPlanting(item.planting, {
+                          rowLengthM:
+                            Number(e.target.value) > 0
+                              ? Math.round(Number(e.target.value) * 10) / 10
+                              : null,
+                        })}
+                    />
+                  </dd>
                 {/if}
               </dl>
               <div class="card-actions">
@@ -765,6 +834,11 @@
                   du {formatFR(item.harvestStart)}<br />
                   au {formatFR(item.end)}
                 </dd>
+
+                {#if item.planting.rowLengthM != null}
+                  <dt>Longueur des rangs</dt>
+                  <dd>{item.planting.rowLengthM.toLocaleString('fr-FR')} m</dd>
+                {/if}
 
                 <dt>Plants (estimation)</dt>
                 <dd>
@@ -834,6 +908,21 @@
               bind:value={cfgPlantSpacing}
             />
           </label>
+          <label>
+            Longueur des rangs (m)
+            <input
+              type="number"
+              min="0.5"
+              step="0.1"
+              placeholder="Toute la zone"
+              bind:value={cfgRowLength}
+            />
+          </label>
+          <p class="mode-hint">
+            Laissez la longueur vide pour occuper toute la zone ; indiquez par
+            exemple la moitié de la longueur de la zone pour n'en remplir que
+            la moitié.
+          </p>
         </div>
       {:else}
         <div class="mode-body">
@@ -901,10 +990,35 @@
     align-items: center;
     gap: 0.7rem;
   }
-  .timeline-year {
-    font-weight: 700;
+  .timeline-wrap input[type='date'] {
+    flex-shrink: 0;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--green-800);
+    font-size: 0.88rem;
+    box-shadow: var(--shadow-s);
+  }
+  .year-nav {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
     color: #2d4a22;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: var(--shadow-s);
+    transition: background 0.15s ease;
+  }
+  .year-nav:hover {
+    background: var(--green-50);
   }
   .timeline {
     position: relative;
@@ -966,39 +1080,6 @@
     margin-left: -1px;
     background: #2d4a22;
     pointer-events: none;
-  }
-  .timebar {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-  }
-  .timebar label {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-  .timebar button {
-    padding: 0.35rem 0.85rem;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--green-800);
-    border-radius: 999px;
-    cursor: pointer;
-    box-shadow: var(--shadow-s);
-    font-size: 0.88rem;
-  }
-  .timebar button:hover {
-    background: var(--green-100);
-    border-color: var(--green-500);
-  }
-  .timebar button.today {
-    border-style: dashed;
-  }
-  .date-label {
-    font-weight: 600;
-    color: #2d4a22;
-    margin-left: auto;
   }
   .main {
     display: flex;
@@ -1240,6 +1321,14 @@
   }
   .ground {
     fill: #cde3b8;
+  }
+  .garden-border {
+    fill: none;
+    stroke: #6a9a4e;
+    stroke-width: 2;
+    stroke-dasharray: 10 8;
+    opacity: 0.55;
+    pointer-events: none;
   }
   .tree {
     pointer-events: none;

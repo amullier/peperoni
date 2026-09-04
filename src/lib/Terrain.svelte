@@ -1,14 +1,20 @@
 <script>
   import { store } from './store.svelte.js'
+  import { GARDEN_MARGIN_M } from './store.svelte.js'
   import { TREES, getTree } from './trees.js'
   import { showConfirm } from './dialog.svelte.js'
 
-  // Dimensions logiques du terrain (unités internes)
-  const W = 1000
-  const H = 600
-
-  // Échelle : 60 unités = 1 mètre → terrain d'environ 16,7 m × 10 m
+  // Échelle : 60 unités = 1 mètre
   const UNITS_PER_M = 60
+
+  // Dimensions logiques (unités internes) : jardin paramétrable
+  // + marge de terrain de 15 m tout autour
+  const MARGIN = GARDEN_MARGIN_M * UNITS_PER_M
+  let gardenW = $derived(store.garden.w * UNITS_PER_M)
+  let gardenH = $derived(store.garden.h * UNITS_PER_M)
+  let W = $derived(gardenW + 2 * MARGIN)
+  let H = $derived(gardenH + 2 * MARGIN)
+
   const GRID = UNITS_PER_M / 10 // précision : 0,1 m
   // Taille minimale d'une zone : 0,5 m
   const MIN_SIZE = UNITS_PER_M / 2
@@ -27,12 +33,20 @@
   function formatM(units) {
     return toM(units).toLocaleString('fr-FR')
   }
+  // Surface d'une zone en m², arrondie au dixième
+  function formatArea(zone) {
+    const m2 = Math.round(((zone.w * zone.h) / (UNITS_PER_M * UNITS_PER_M)) * 10) / 10
+    return m2.toLocaleString('fr-FR')
+  }
 
   let svgEl
   let drawing = $state(null) // { x0, y0, x1, y1 } pendant le tracé
   let dragging = $state(null) // { id, offX, offY, moved } pendant un déplacement de zone
   let resizing = $state(null) // { id, left, right, top, bottom, moved } pendant un redimensionnement
-  let draggingTree = $state(null) // { id, moved } pendant un déplacement d'arbre
+  let draggingTree = $state(null) // { id, moved }
+  // Sélection globale (Ctrl+A) : glisser déplace tous les éléments
+  let allSelected = $state(false)
+  let draggingAll = $state(null) // { startX, startY, items, minX, minY, maxX, maxY, moved } pendant un déplacement d'arbre
   let editingId = $state(null)
   let editingKind = $state(null) // 'zone' | 'serre'
   let editName = $state('')
@@ -92,12 +106,31 @@
 
   // --- Vue : zoom (Ctrl + molette) et pan (clic milieu) ---
 
-  let view = $state({ x: 0, y: 0, w: W, h: H })
-  let panning = $state(null) // { startX, startY, viewX, viewY }
-  let isZoomed = $derived(view.w < W || view.x !== 0 || view.y !== 0)
+  // Vue par défaut : cadre tout le jardin (quel que soit sa taille),
+  // avec une petite marge de 1 m autour
+  let defaultView = $derived.by(() => {
+    const side = Math.max(gardenW, gardenH) + 2 * UNITS_PER_M
+    return {
+      x: (W - side) / 2,
+      y: (H - side) / 2,
+      w: side,
+      h: side,
+    }
+  })
 
-  function clampView(value, max) {
-    return Math.max(0, Math.min(max, value))
+  // svelte-ignore state_referenced_locally -- valeur initiale voulue
+  let view = $state({ ...defaultView })
+  let panning = $state(null) // { startX, startY, viewX, viewY }
+  let isZoomed = $derived(
+    view.w !== defaultView.w ||
+      view.x !== defaultView.x ||
+      view.y !== defaultView.y
+  )
+
+  function clampView(value, viewSize, worldSize) {
+    // Garde toujours au moins 1 m de terrain visible dans la vue
+    const margin = UNITS_PER_M
+    return Math.max(margin - viewSize, Math.min(worldSize - margin, value))
   }
 
   function onWheel(event) {
@@ -107,14 +140,14 @@
     const factor = event.deltaY > 0 ? 1.2 : 1 / 1.2
     const newW = Math.max(W / 10, Math.min(W, view.w * factor))
     const newH = newW * (H / W)
-    view.x = clampView(p.x - ((p.x - view.x) * newW) / view.w, W - newW)
-    view.y = clampView(p.y - ((p.y - view.y) * newH) / view.h, H - newH)
+    view.x = clampView(p.x - ((p.x - view.x) * newW) / view.w, newW, W)
+    view.y = clampView(p.y - ((p.y - view.y) * newH) / view.h, newH, H)
     view.w = newW
     view.h = newH
   }
 
   function resetView() {
-    view = { x: 0, y: 0, w: W, h: H }
+    view = { ...defaultView }
   }
 
   $effect(() => {
@@ -224,6 +257,31 @@
       return
     }
     if (event.button !== 0 || editingId) return
+    if (allSelected) {
+      // Tout est sélectionné (Ctrl+A) : le glisser déplace tout
+      const p = toSvgPoint(event)
+      const items = [
+        ...store.zones.map((o) => ({ o, x: o.x, y: o.y, w: o.w, h: o.h })),
+        ...store.serres.map((o) => ({ o, x: o.x, y: o.y, w: o.w, h: o.h })),
+        ...store.trees.map((o) => ({ o, x: o.x, y: o.y, w: 0, h: 0 })),
+      ]
+      if (items.length === 0) {
+        allSelected = false
+        return
+      }
+      draggingAll = {
+        startX: p.x,
+        startY: p.y,
+        items,
+        minX: Math.min(...items.map((i) => i.x)),
+        minY: Math.min(...items.map((i) => i.y)),
+        maxX: Math.max(...items.map((i) => i.x + i.w)),
+        maxY: Math.max(...items.map((i) => i.y + i.h)),
+        moved: false,
+      }
+      svgEl.setPointerCapture(event.pointerId)
+      return
+    }
     selectedId = null
     selectedTreeId = null
     selectedSerreId = null
@@ -245,12 +303,28 @@
       const scale = view.w / svgEl.clientWidth
       view.x = clampView(
         panning.viewX - (event.clientX - panning.startX) * scale,
-        W - view.w
+        view.w,
+        W
       )
       view.y = clampView(
         panning.viewY - (event.clientY - panning.startY) * scale,
-        H - view.h
+        view.h,
+        H
       )
+      return
+    }
+    if (draggingAll) {
+      // Déplacement de tous les éléments, borné aux limites du terrain
+      const p = toSvgPoint(event)
+      let dx = roundToGrid(p.x - draggingAll.startX)
+      let dy = roundToGrid(p.y - draggingAll.startY)
+      dx = Math.max(-draggingAll.minX, Math.min(W - draggingAll.maxX, dx))
+      dy = Math.max(-draggingAll.minY, Math.min(H - draggingAll.maxY, dy))
+      for (const it of draggingAll.items) {
+        it.o.x = it.x + dx
+        it.o.y = it.y + dy
+      }
+      draggingAll.moved = true
       return
     }
     if (drawing) {
@@ -446,6 +520,12 @@
       panning = null
       return
     }
+    if (draggingAll) {
+      if (draggingAll.moved) store.save()
+      else allSelected = false // simple clic : désélectionne tout
+      draggingAll = null
+      return
+    }
     if (drawing) {
       const rect = normalized(drawing)
       const isSerre = drawing.isSerre
@@ -485,6 +565,7 @@
   }
 
   function onZonePointerDown(event, zone) {
+    if (allSelected) return // laisse le glisser-tout gérer
     if (event.button !== 0 || editingId || treeTool || serreTool) return
     // Empêche le démarrage d'un tracé lorsqu'on clique sur une zone
     event.stopPropagation()
@@ -503,6 +584,7 @@
   }
 
   function onSerrePointerDown(event, serre) {
+    if (allSelected) return // laisse le glisser-tout gérer
     if (event.button !== 0 || editingId || treeTool || serreTool) return
     event.stopPropagation()
     selectedSerreId = serre.id
@@ -532,6 +614,7 @@
   }
 
   function onHandlePointerDown(event, zone, edges) {
+    if (allSelected) return // laisse le glisser-tout gérer
     if (event.button !== 0 || editingId || treeTool || serreTool) return
     event.stopPropagation()
     selectedId = zone.id
@@ -542,6 +625,7 @@
   }
 
   function onTreePointerDown(event, tree) {
+    if (allSelected) return // laisse le glisser-tout gérer
     if (event.button !== 0 || editingId || treeTool || serreTool) return
     event.stopPropagation()
     selectedTreeId = tree.id
@@ -693,8 +777,20 @@
       treeTool = null
       treeSearch = ''
       serreTool = false
+      allSelected = false
       closeCtxMenu()
       varietyPopup = null
+    } else if (event.ctrlKey && event.key.toLowerCase() === 'a') {
+      // Ctrl+A : tout sélectionner (glisser pour tout déplacer)
+      event.preventDefault()
+      const hasItems =
+        store.zones.length > 0 ||
+        store.serres.length > 0 ||
+        store.trees.length > 0
+      allSelected = hasItems
+      selectedId = null
+      selectedTreeId = null
+      selectedSerreId = null
     } else if (event.ctrlKey && event.key === 'c' && selectedZone) {
       copyZone(selectedZone)
       event.preventDefault()
@@ -728,6 +824,38 @@
 
 <div class="terrain-screen">
   <aside>
+    <h2>Mon jardin</h2>
+    <div class="dims garden-size">
+      <label>
+        Largeur (m)
+        <input
+          type="number"
+          step="1"
+          min="5"
+          max="200"
+          value={store.garden.w}
+          onchange={(e) => {
+            store.setGardenSize(Number(e.target.value), store.garden.h)
+            resetView()
+          }}
+        />
+      </label>
+      <label>
+        Hauteur (m)
+        <input
+          type="number"
+          step="1"
+          min="5"
+          max="200"
+          value={store.garden.h}
+          onchange={(e) => {
+            store.setGardenSize(store.garden.w, Number(e.target.value))
+            resetView()
+          }}
+        />
+      </label>
+    </div>
+
     <h2>Mes zones</h2>
     <p class="hint">
       Tracez un rectangle sur le terrain (cliquer-glisser) pour créer une zone
@@ -769,6 +897,7 @@
             {:else}
               <button class="zone-name" onclick={() => (selectedId = zone.id)}>
                 {zone.name}
+                <span class="area">{formatArea(zone)} m²</span>
                 {#if store.isZoneSheltered(zone)}
                   <span class="badge">sous abri</span>
                 {/if}
@@ -980,6 +1109,7 @@
       viewBox="{view.x} {view.y} {view.w} {view.h}"
       class:tree-mode={treeTool}
       class:serre-mode={serreTool}
+      class:all-selected={allSelected}
       onpointerdown={onPointerDown}
       oncontextmenu={onGroundContextMenu}
       onpointermove={onPointerMove}
@@ -989,11 +1119,19 @@
     >
       <!-- fond -->
       <rect x="0" y="0" width={W} height={H} class="ground" />
+      <!-- Limites du jardin (pointillés discrets) -->
+      <rect
+        x={MARGIN}
+        y={MARGIN}
+        width={gardenW}
+        height={gardenH}
+        class="garden-border"
+      />
 
       {#each store.zones as zone (zone.id)}
         <g
           class="zone"
-          class:selected={selectedId === zone.id}
+          class:selected={selectedId === zone.id || allSelected}
           onpointerdown={(e) => onZonePointerDown(e, zone)}
           oncontextmenu={(e) => onZoneContextMenu(e, zone)}
           role="button"
@@ -1077,7 +1215,7 @@
       {#each store.trees as tree (tree.id)}
         <g
           class="tree"
-          class:selected={selectedTreeId === tree.id}
+          class:selected={selectedTreeId === tree.id || allSelected}
           onpointerdown={(e) => onTreePointerDown(e, tree)}
           role="button"
           tabindex="0"
@@ -1095,7 +1233,7 @@
 
       <!-- Serres (au-dessus des zones, seul le cadre est interactif) -->
       {#each store.serres as serre (serre.id)}
-        <g class="serre" class:selected={selectedSerreId === serre.id}>
+        <g class="serre" class:selected={selectedSerreId === serre.id || allSelected}>
           <rect
             class="glass"
             x={serre.x}
@@ -1327,6 +1465,12 @@
     font-size: 0.95rem;
     color: inherit;
   }
+  button.zone-name .area {
+    font-size: 0.75rem;
+    color: #888;
+    margin-left: 0.25rem;
+    white-space: nowrap;
+  }
   .zone-row input {
     flex: 1;
     min-width: 0;
@@ -1356,6 +1500,9 @@
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 0.85rem;
+  }
+  .garden-size {
+    margin-bottom: 0.8rem;
   }
   .canvas-wrap {
     flex: 1;
@@ -1388,6 +1535,20 @@
   }
   .ground {
     fill: #cde3b8;
+  }
+  .garden-border {
+    fill: none;
+    stroke: #6a9a4e;
+    stroke-width: 2;
+    stroke-dasharray: 10 8;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  svg.all-selected,
+  svg.all-selected .zone,
+  svg.all-selected .serre rect.frame,
+  svg.all-selected .tree {
+    cursor: move;
   }
   .zone {
     outline: none;

@@ -9,6 +9,8 @@ const DATA_VERSION = 1
 export const UNITS_PER_M = 60
 // Marge conservée en bord de zone pour l'empilement des rangs
 export const ROWS_MARGIN = 8
+// Marge de terrain (zone verte) autour du jardin, en mètres
+export const GARDEN_MARGIN_M = 15
 
 function defaultData() {
   return {
@@ -17,6 +19,7 @@ function defaultData() {
     plantings: [],
     trees: [],
     serres: [],
+    garden: { w: 50, h: 50 },
   }
 }
 
@@ -54,6 +57,9 @@ export function validateData(data) {
         (p.rowSpacingCm === undefined || typeof p.rowSpacingCm === 'number') &&
         (p.plantSpacingCm === undefined ||
           typeof p.plantSpacingCm === 'number') &&
+        (p.rowLengthM === undefined ||
+          p.rowLengthM === null ||
+          typeof p.rowLengthM === 'number') &&
         (p.mode === undefined || typeof p.mode === 'string') &&
         (p.variety === undefined ||
           p.variety === null ||
@@ -75,6 +81,11 @@ export function validateData(data) {
           typeof t.variety === 'string')
     ) &&
     (data.serres === undefined || Array.isArray(data.serres)) &&
+    (data.garden === undefined ||
+      (data.garden &&
+        typeof data.garden === 'object' &&
+        typeof data.garden.w === 'number' &&
+        typeof data.garden.h === 'number')) &&
     (data.serres ?? []).every(
       (s) =>
         typeof s.id === 'string' &&
@@ -143,6 +154,7 @@ class Store {
   plantings = $state([])
   trees = $state([])
   serres = $state([])
+  garden = $state({ w: 50, h: 50 }) // taille du jardin en mètres
   cropOverrides = $state({}) // surcharges des métriques par légume
   hiddenCrops = $state([]) // légumes masqués dans la planification
   customCrops = $state({}) // légumes ajoutés par l'utilisateur (id → crop)
@@ -155,6 +167,7 @@ class Store {
     this.plantings = data.plantings
     this.trees = data.trees ?? []
     this.serres = data.serres ?? []
+    this.garden = data.garden ?? { w: 50, h: 50 }
     this.cropOverrides = data.cropOverrides ?? {}
     this.hiddenCrops = data.hiddenCrops ?? []
     this.customCrops = data.customCrops ?? {}
@@ -172,6 +185,7 @@ class Store {
       plantings: this.plantings,
       trees: this.trees,
       serres: this.serres,
+      garden: this.garden,
       cropOverrides: this.cropOverrides,
       hiddenCrops: this.hiddenCrops,
       customCrops: this.customCrops,
@@ -195,6 +209,7 @@ class Store {
     this.plantings = data.plantings
     this.trees = data.trees ?? []
     this.serres = data.serres ?? []
+    this.garden = data.garden ?? { w: 50, h: 50 }
     this.cropOverrides = data.cropOverrides ?? {}
     this.hiddenCrops = data.hiddenCrops ?? []
     this.customCrops = data.customCrops ?? {}
@@ -361,6 +376,17 @@ class Store {
       Object.keys(this.cropOverrides[cropId] ?? {}).length > 0 ||
       this.hasCropWindowsOverride(cropId)
     )
+  }
+
+  // --- Jardin ---
+
+  // Taille du jardin en mètres (bornée entre 5 et 200 m)
+  setGardenSize(w, h) {
+    this.garden = {
+      w: Math.max(5, Math.min(200, w)),
+      h: Math.max(5, Math.min(200, h)),
+    }
+    this.save()
   }
 
   // --- Zones ---
@@ -593,6 +619,8 @@ class Store {
       rows: config.rows ?? 1,
       rowSpacingCm: config.rowSpacingCm ?? metrics.rowSpacingCm,
       plantSpacingCm: config.plantSpacingCm ?? metrics.plantSpacingCm,
+      // Longueur des rangs en mètres (null = toute la longueur de la zone)
+      rowLengthM: config.rowLengthM ?? null,
     }
     // Pas de blocage si la place manque : l'appelant affiche un avertissement
     const planting = {
@@ -649,7 +677,7 @@ class Store {
 
   // Estimation du nombre de plants d'une plantation : nombre exact pour
   // les plantations « par plant », sinon rangs × plants/rang (le long du
-  // grand côté de la zone)
+  // grand côté de la zone, ou de la longueur de rang choisie)
   estimatePlantCount(planting) {
     if (planting.mode === 'plants') return planting.plants?.length ?? 0
     const zone = this.zones.find((z) => z.id === planting.zoneId)
@@ -657,7 +685,9 @@ class Store {
     const cmToUnits = UNITS_PER_M / 100
     const plantGap = (planting.plantSpacingCm ?? 20) * cmToUnits
     const margin = Math.max(6, plantGap / 2)
-    const length = Math.max(zone.w, zone.h) - margin * 2
+    let length = Math.max(zone.w, zone.h) - margin * 2
+    if (planting.rowLengthM != null)
+      length = Math.min(length, planting.rowLengthM * UNITS_PER_M)
     if (length <= 0) return 0
     const perRow = Math.floor(length / plantGap) + 1
     return (planting.rows ?? 1) * perRow

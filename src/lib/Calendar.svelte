@@ -1,6 +1,6 @@
 <script>
   import { store } from './store.svelte.js'
-  import { formatFR, fromISO, compareISO } from './dates.js'
+  import { formatFR, fromISO, toISO, addDays } from './dates.js'
 
   const MONTHS = [
     'Janvier',
@@ -21,68 +21,130 @@
     return store.zones.find((z) => z.id === zoneId)?.name ?? 'Zone supprimée'
   }
 
-  // Tâches issues des plantations saisies : semis en godet (si le légume
-  // s'élève en pépinière) puis plantation, à leurs dates respectives.
-  let tasks = $derived.by(() => {
+  // Tâches élémentaires issues des plantations saisies : semis en godet
+  // (si le légume s'élève en pépinière), plantation, puis début de récolte.
+  let rawTasks = $derived.by(() => {
     const list = []
     for (const planting of store.plantings) {
       const crop = store.getCrop(planting.cropId)
       if (!crop) continue
-      const base = {
-        planting,
-        crop,
-        zone: zoneName(planting.zoneId),
-        sheltered: store.isPlantingSheltered(planting),
-        variety: planting.variety ?? null,
-      }
+      const plants = store.estimatePlantCount(planting)
       const sowingDate = store.plantingSowingDate(planting)
       if (sowingDate) {
-        list.push({ ...base, type: 'semis', date: sowingDate })
-        list.push({ ...base, type: 'plantation', date: planting.plantedDate })
+        list.push({ crop, plants, type: 'semis', date: sowingDate })
+        list.push({ crop, plants, type: 'plantation', date: planting.plantedDate })
       } else {
-        list.push({ ...base, type: 'semis-direct', date: planting.plantedDate })
+        list.push({ crop, plants, type: 'semis-direct', date: planting.plantedDate })
       }
+      // Début de récolte : par parcelle (la zone importe pour aller récolter)
+      list.push({
+        crop,
+        plants,
+        type: 'recolte',
+        date: store.plantingHarvestStart(planting),
+        zone: zoneName(planting.zoneId),
+      })
     }
-    return list.sort(
-      (a, b) => compareISO(a.date, b.date) || a.crop.name.localeCompare(b.crop.name)
-    )
+    return list
   })
 
-  // Regroupement par mois (année-mois), dans l'ordre chronologique
+  // Numéro de bloc de 3 jours (jours civils depuis l'epoch / 3)
+  function blockIndex(iso) {
+    const d = fromISO(iso)
+    return Math.floor(
+      Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000 / 3
+    )
+  }
+
+  function blockStartISO(index) {
+    const d = new Date(index * 3 * 86400000)
+    return toISO(
+      new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+    )
+  }
+
+  // Regroupement en blocs de 3 jours, puis par légume + type de tâche
+  // (toutes zones confondues, sauf les récoltes : une ligne par parcelle),
+  // avec le total de plants estimés.
+  const TYPE_ORDER = { semis: 0, 'semis-direct': 0, plantation: 1, recolte: 2 }
+
+  let blocks = $derived.by(() => {
+    const byBlock = new Map()
+    for (const task of rawTasks) {
+      const idx = blockIndex(task.date)
+      if (!byBlock.has(idx)) byBlock.set(idx, new Map())
+      const byCrop = byBlock.get(idx)
+      const key = `${task.type}:${task.crop.id}${task.zone ? `:${task.zone}` : ''}`
+      if (!byCrop.has(key)) {
+        byCrop.set(key, {
+          key,
+          type: task.type,
+          crop: task.crop,
+          zone: task.zone ?? null,
+          plants: 0,
+        })
+      }
+      byCrop.get(key).plants += task.plants
+    }
+    return [...byBlock.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([idx, byCrop]) => {
+        const start = blockStartISO(idx)
+        const end = addDays(start, 2)
+        return {
+          idx,
+          start,
+          end,
+          tasks: [...byCrop.values()].sort(
+            (a, b) =>
+              TYPE_ORDER[a.type] - TYPE_ORDER[b.type] ||
+              a.crop.name.localeCompare(b.crop.name) ||
+              (a.zone ?? '').localeCompare(b.zone ?? '')
+          ),
+        }
+      })
+  })
+
+  // Blocs regroupés par mois (année-mois) pour l'affichage en colonnes
   let groups = $derived.by(() => {
     const byMonth = new Map()
-    for (const task of tasks) {
-      const d = fromISO(task.date)
+    for (const block of blocks) {
+      const d = fromISO(block.start)
       const key = `${d.getFullYear()}-${d.getMonth()}`
       if (!byMonth.has(key)) {
         byMonth.set(key, {
           key,
           label: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`,
-          tasks: [],
+          blocks: [],
         })
       }
-      byMonth.get(key).tasks.push(task)
+      byMonth.get(key).blocks.push(block)
     }
     return [...byMonth.values()]
   })
 
-  function taskKey(task) {
-    return `${task.planting.id}:${task.type}`
+  function taskKey(block, task) {
+    return `${block.idx}:${task.key}`
   }
 
-  function isDone(task) {
-    return store.isTaskDone(taskKey(task), task.date)
+  function isDone(block, task) {
+    return store.isTaskDone(taskKey(block, task), block.end)
   }
 
   const TYPE_LABELS = {
     semis: { icon: '🌱', label: 'Semis en godet' },
     'semis-direct': { icon: '🌱', label: 'Semis direct' },
     plantation: { icon: '🪴', label: 'Plantation' },
+    recolte: { icon: '🧺', label: 'Début de récolte' },
   }
 
   const DAY_MONTH = { day: 'numeric', month: 'short' }
   function formatDay(iso) {
     return fromISO(iso).toLocaleDateString('fr-FR', DAY_MONTH)
+  }
+
+  function blockLabel(block) {
+    return `${formatDay(block.start)} – ${formatDay(block.end)}`
   }
 </script>
 
@@ -90,8 +152,8 @@
   <div class="head">
     <h2>🗓️ Calendrier des tâches</h2>
     <p class="hint">
-      Semis et plantations d'après les légumes saisis sur la planification.
-      Cochez les tâches faites ; les tâches antérieures au
+      Semis et plantations regroupés par périodes de 3 jours, toutes zones
+      confondues. Cochez les tâches faites ; les tâches antérieures au
       {formatFR(store.currentDate)} sont cochées par défaut.
     </p>
   </div>
@@ -107,32 +169,38 @@
     {#each groups as group (group.key)}
       <section class="month">
         <h3>{group.label}</h3>
-        <ul>
-          {#each group.tasks as task (taskKey(task))}
-            <li class:done={isDone(task)}>
-              <button
-                class="check"
-                title={isDone(task) ? 'Marquer à faire' : 'Marquer comme fait'}
-                onclick={() => store.toggleTaskDone(taskKey(task), task.date)}
-              >
-                {isDone(task) ? '✅' : '⬜'}
-              </button>
-              <span class="date">{formatDay(task.date)}</span>
-              <span class="icon">{TYPE_LABELS[task.type].icon}</span>
-              <span class="text">
-                {TYPE_LABELS[task.type].label} de
-                <strong>{task.crop.emoji} {task.crop.name}</strong>
-                {#if task.variety}
-                  <span class="variety">« {task.variety} »</span>
-                {/if}
-                — {task.zone}
-              </span>
-              {#if task.sheltered && task.type !== 'semis'}
-                <span class="badge">sous abri</span>
-              {/if}
-            </li>
-          {/each}
-        </ul>
+        {#each group.blocks as block (block.idx)}
+          <div class="block">
+            <h4>{blockLabel(block)}</h4>
+            <ul>
+              {#each block.tasks as task (task.key)}
+                <li class:done={isDone(block, task)}>
+                  <button
+                    class="check"
+                    title={isDone(block, task)
+                      ? 'Marquer à faire'
+                      : 'Marquer comme fait'}
+                    onclick={() =>
+                      store.toggleTaskDone(taskKey(block, task), block.end)}
+                  >
+                    {isDone(block, task) ? '✅' : '⬜'}
+                  </button>
+                  <span class="icon">{TYPE_LABELS[task.type].icon}</span>
+                  <span class="text">
+                    {TYPE_LABELS[task.type].label} de
+                    <strong>{task.crop.emoji} {task.crop.name}</strong>
+                    {#if task.zone}
+                      <span class="zone">— {task.zone}</span>
+                    {/if}
+                  </span>
+                  {#if task.type !== 'recolte'}
+                    <span class="plants">≈ {task.plants} plants</span>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/each}
       </section>
     {/each}
   </div>
@@ -217,6 +285,25 @@
     color: #888;
     font-size: 0.78rem;
     min-width: 3.6rem;
+  }
+  .block {
+    margin-bottom: 0.5rem;
+  }
+  .block h4 {
+    margin: 0.4rem 0 0.1rem;
+    font-size: 0.78rem;
+    color: #888;
+    font-weight: 600;
+  }
+  .plants {
+    margin-left: auto;
+    color: #7a5c1e;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+  .zone {
+    color: #777;
+    font-size: 0.78rem;
   }
   .variety {
     color: #777;

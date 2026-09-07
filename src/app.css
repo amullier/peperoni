@@ -32,6 +32,12 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* badge Netlify injecté au runtime */
+#nl-badge-frame {
+  display: none;
+}
+
+
 * {
   box-sizing: border-box;
 }

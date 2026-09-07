@@ -39,6 +39,21 @@
     return m2.toLocaleString('fr-FR')
   }
 
+  // Surfaces totales (m²) : cultivée et sous abri
+  function zoneAreaM2(zone) {
+    return (zone.w * zone.h) / (UNITS_PER_M * UNITS_PER_M)
+  }
+  let totalAreaM2 = $derived(
+    Math.round(store.zones.reduce((sum, z) => sum + zoneAreaM2(z), 0) * 10) / 10
+  )
+  let shelteredAreaM2 = $derived(
+    Math.round(
+      store.zones
+        .filter((z) => store.isZoneSheltered(z))
+        .reduce((sum, z) => sum + zoneAreaM2(z), 0) * 10
+    ) / 10
+  )
+
   let svgEl
   let drawing = $state(null) // { x0, y0, x1, y1 } pendant le tracé
   let dragging = $state(null) // { id, offX, offY, moved } pendant un déplacement de zone
@@ -880,6 +895,15 @@
 
     {#if store.zones.length === 0}
       <p class="empty">Aucune zone pour l'instant.</p>
+    {:else}
+      <p class="total-area">
+        Surface cultivée : <strong>{totalAreaM2.toLocaleString('fr-FR')} m²</strong>
+        {#if shelteredAreaM2 > 0}
+          <span class="sheltered">
+            (sous abri : {shelteredAreaM2.toLocaleString('fr-FR')} m²)
+          </span>
+        {/if}
+      </p>
     {/if}
     <ul>
       {#each store.zones as zone (zone.id)}
@@ -1407,6 +1431,14 @@
   .empty {
     font-style: italic;
     color: #999;
+  }
+  .total-area {
+    font-size: 0.9rem;
+    color: #444;
+    margin: 0.3rem 0;
+  }
+  .total-area .sheltered {
+    color: #666;
   }
   .clipboard-actions {
     display: flex;

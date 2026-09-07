@@ -4,6 +4,7 @@
   import Planning from './lib/Planning.svelte'
   import Settings from './lib/Settings.svelte'
   import TableView from './lib/TableView.svelte'
+  import Calendar from './lib/Calendar.svelte'
   import Tutorial from './lib/Tutorial.svelte'
   import Dialog from './lib/Dialog.svelte'
 
@@ -29,6 +30,8 @@
       <Planning />
     {:else if screen === 'table'}
       <TableView />
+    {:else if screen === 'calendar'}
+      <Calendar />
     {:else}
       <Settings />
     {/if}

@@ -159,6 +159,7 @@ class Store {
   hiddenCrops = $state([]) // légumes masqués dans la planification
   customCrops = $state({}) // légumes ajoutés par l'utilisateur (id → crop)
   cropWindows = $state({}) // surcharges des fenêtres de plantation (id → { plantWindows?, shelterPlantWindows? })
+  taskDone = $state({}) // état manuel des tâches du calendrier (clé → bool)
   currentDate = $state(todayISO())
 
   constructor() {
@@ -172,6 +173,7 @@ class Store {
     this.hiddenCrops = data.hiddenCrops ?? []
     this.customCrops = data.customCrops ?? {}
     this.cropWindows = data.cropWindows ?? {}
+    this.taskDone = data.taskDone ?? {}
   }
 
   save() {
@@ -190,6 +192,7 @@ class Store {
       hiddenCrops: this.hiddenCrops,
       customCrops: this.customCrops,
       cropWindows: this.cropWindows,
+      taskDone: this.taskDone,
     }
   }
 
@@ -214,6 +217,7 @@ class Store {
     this.hiddenCrops = data.hiddenCrops ?? []
     this.customCrops = data.customCrops ?? {}
     this.cropWindows = data.cropWindows ?? {}
+    this.taskDone = data.taskDone ?? {}
     this.save()
   }
 
@@ -221,6 +225,21 @@ class Store {
   // surcharges et légumes masqués)
   clearAll() {
     this.importData(defaultData())
+  }
+
+  // --- Tâches du calendrier ---
+
+  // État d'une tâche : coché manuellement, sinon faite si la date est passée
+  isTaskDone(key, dateISO) {
+    return this.taskDone[key] ?? compareISO(dateISO, this.currentDate) < 0
+  }
+
+  toggleTaskDone(key, dateISO) {
+    this.taskDone = {
+      ...this.taskDone,
+      [key]: !this.isTaskDone(key, dateISO),
+    }
+    this.save()
   }
 
   // --- Visibilité des légumes ---
@@ -353,6 +372,8 @@ class Store {
       plantSpacingCm: o.plantSpacingCm ?? base.plantSpacingCm ?? 20,
       // Semis en godet : jours entre semis et implantation (0 = semis direct)
       nurseryDays: o.nurseryDays ?? base.nurseryDays ?? 0,
+      // Rendement espéré par plant (kg)
+      yieldKgPerPlant: o.yieldKgPerPlant ?? base.yieldKgPerPlant ?? 0,
     }
   }
 

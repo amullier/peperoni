@@ -54,6 +54,24 @@
     )
   }
 
+  // Récolte espérée (kg) : plants estimés × rendement par plant
+  function plantingYieldKg(planting) {
+    return (
+      store.estimatePlantCount(planting) *
+      store.cropMetrics(planting.cropId).yieldKgPerPlant
+    )
+  }
+
+  function totalYieldKg(plantings) {
+    return plantings.reduce((sum, r) => sum + plantingYieldKg(r.planting), 0)
+  }
+
+  function formatKg(kg) {
+    if (kg <= 0) return null
+    const rounded = kg < 10 ? Math.round(kg * 10) / 10 : Math.round(kg)
+    return `${rounded.toLocaleString('fr-FR')} kg`
+  }
+
   // Groupes du tableau : { id, label, sheltered, plantings } — chaque
   // plantation porte son libellé de sous-ligne (zone ou légume)
   let rows = $derived.by(() => {
@@ -183,6 +201,11 @@
               <span class="shelter" title="Sous abri">🏠</span>
             {/if}
             <span class="count">≈ {totalPlants(group.plantings)} plants</span>
+            {#if groupBy === 'crop' && formatKg(totalYieldKg(group.plantings))}
+              <span class="yield" title="Récolte espérée">
+                🧺 {formatKg(totalYieldKg(group.plantings))}
+              </span>
+            {/if}
           </div>
           <div class="track"></div>
         </div>
@@ -197,6 +220,11 @@
               <span class="count">
                 ≈ {store.estimatePlantCount(r.planting)}
               </span>
+              {#if groupBy === 'zone' && formatKg(plantingYieldKg(r.planting))}
+                <span class="yield" title="Récolte espérée">
+                  🧺 {formatKg(plantingYieldKg(r.planting))}
+                </span>
+              {/if}
             </div>
             <div class="track" onclick={onGridClick}>
               {#each MONTHS as month (month)}
@@ -383,6 +411,12 @@
     font-size: 0.7rem;
     color: #888;
     font-weight: 400;
+    white-space: nowrap;
+  }
+  .yield {
+    font-size: 0.7rem;
+    color: #7a5c1e;
+    font-weight: 500;
     white-space: nowrap;
   }
   .track {

@@ -77,6 +77,13 @@
       📊 Tableau
     </button>
     <button
+      class:active={screen === 'calendar'}
+      class:tuto={tutoHighlight === 'calendar'}
+      onclick={() => (screen = 'calendar')}
+    >
+      🗓️ Calendrier
+    </button>
+    <button
       class:active={screen === 'settings'}
       class:tuto={tutoHighlight === 'settings'}
       onclick={() => (screen = 'settings')}

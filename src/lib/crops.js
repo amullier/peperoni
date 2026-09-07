@@ -424,6 +424,44 @@ for (const [id, days] of Object.entries(NURSERY_DAYS)) {
   if (CROPS[id]) CROPS[id].nurseryDays = days
 }
 
+// Rendement espéré par plant, en kg (ordres de grandeur pour un potager
+// amateur en climat tempéré ; ajustable via les surcharges de métriques).
+const YIELD_KG_PER_PLANT = {
+  // Feuilles
+  poireau: 0.3,
+  laitue: 0.4,
+  epinard: 0.3,
+  chou: 1.5,
+  blette: 1.5,
+  celeri: 0.8,
+  mache: 0.05,
+  // Fruits
+  tomate: 4,
+  courgette: 8,
+  concombre: 4,
+  poivron: 1.5,
+  aubergine: 2,
+  courges: 5,
+  haricotVert: 0.25,
+  petitPois: 0.1,
+  melon: 2.5,
+  mais: 0.25,
+  // Racines
+  carotte: 0.15,
+  pommeDeTerre: 1,
+  radis: 0.02,
+  betterave: 0.4,
+  navet: 0.3,
+  panais: 0.3,
+  oignon: 0.15,
+  echalote: 0.08,
+  ail: 0.06,
+}
+
+for (const [id, kg] of Object.entries(YIELD_KG_PER_PLANT)) {
+  if (CROPS[id]) CROPS[id].yieldKgPerPlant = kg
+}
+
 // Variétés usuelles par légume (proposées lors du choix de variété
 // d'une plantation ; liste indicative, la plantation peut rester sans
 // variété).
